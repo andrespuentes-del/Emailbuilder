@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Librería — Definir plantilla</title>
+  <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      background: #FFFFFF;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────── */
+    /* _Base/Header/Create&Edit — pb:12 pt:16 */
+    .header {
+      background: #FFFFFF;
+      box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.12);
+      padding: 16px 0 12px;
+      position: relative;
+      z-index: 20;
+    }
+    .header__inner { padding: 0 80px; }
+
+    /* andes-breadcrumb */
+    .breadcrumb { display: flex; align-items: center; gap: 16px; height: 15px; }
+    .breadcrumb__back { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .breadcrumb__back-text { font-size: 12px; font-weight: 400; line-height: 15px; color: #3483FA; }
+    .breadcrumb__divider { width: 1px; height: 10.812px; background: rgba(0,0,0,0.25); }
+    .breadcrumb__current { font-size: 12px; font-weight: 400; line-height: 15px; color: rgba(0,0,0,0.55); }
+
+    /* Title/M */
+    .page-title {
+      font-size: 24px; font-weight: 600; line-height: 30px;
+      color: rgba(0,0,0,0.9); margin-top: 8px;
+    }
+
+    /* ── Action zone — franja #EDEDED + 3 canal cards ── */
+    /* h:148px | cards at top:113.23px from page = 31.23px from zone top */
+    .action-zone {
+      background: #EDEDED;
+      height: 148px;
+      padding: 31px 0 0 80px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .canal-row { display: flex; gap: 20px; }
+
+    /* andes-card | Elevated shadow | radius:6px */
+    .canal-card {
+      background: #FFFFFF;
+      height: 84px;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      border: 1.5px solid transparent;
+      display: flex; align-items: center;
+      cursor: pointer;
+      text-decoration: none;
+      overflow: hidden;
+    }
+    .canal-card:hover { box-shadow: 0px 8px 24px 0px rgba(0,0,0,0.14); border-color: #3483FA; }
+    .canal-card--1, .canal-card--3 { width: 287px; }
+    .canal-card--2 { width: 286px; }
+
+    .canal-card__icon {
+      width: 96px; height: 84px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px 24px; flex-shrink: 0;
+    }
+    .canal-card__body {
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 4px; overflow: hidden;
+    }
+    /* Body/M-semibold */
+    .canal-card__title {
+      font-size: 16px; font-weight: 600; line-height: 20px;
+      color: rgba(0,0,0,0.9); white-space: nowrap;
+    }
+    /* Body/S */
+    .canal-card__subtitle {
+      font-size: 14px; font-weight: 400; line-height: 18px;
+      color: rgba(0,0,0,0.55); white-space: nowrap;
+    }
+
+    /* ── Library section ─────────────────────────────── */
+    .library { background: #FFFFFF; }
+
+    /* Filter bar — sticky | px:80 py:12 | border-bottom */
+    .filter-bar {
+      background: #FFFFFF;
+      border-bottom: 1px solid #F5F5F5;
+      padding: 12px 80px;
+      display: flex; align-items: center; gap: 8px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    /* Title/XS */
+    .filter-bar__title {
+      font-size: 18px; font-weight: 600; line-height: 22px;
+      color: #000000; flex: 1;
+    }
+    .filter-bar__controls {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    /* andes-searchbox | simple | idle */
+    .searchbox {
+      display: flex; align-items: center; gap: 8px;
+      height: 32px; padding: 0 12px;
+      border: 1px solid rgba(0,0,0,0.25); border-radius: 4px;
+      background: #FFFFFF; width: 200px;
+    }
+    .searchbox:focus-within { border-color: #3483FA; }
+    .searchbox__input {
+      border: none; outline: none; background: transparent;
+      font-family: inherit; font-size: 14px; line-height: 18px;
+      color: rgba(0,0,0,0.9); width: 100%;
+    }
+    .searchbox__input::placeholder { color: rgba(0,0,0,0.25); }
+
+    /* andes-dropdown | text style (standalone/medium) */
+    .filter-by {
+      display: flex; align-items: center; gap: 4px;
+      position: relative;
+    }
+    /* Body/M-semibold */
+    .filter-by__label {
+      font-size: 16px; font-weight: 600; line-height: 20px;
+      color: #000000; white-space: nowrap;
+    }
+    .filter-by__select {
+      display: flex; align-items: center; gap: 2px; cursor: pointer;
+    }
+    /* Body/M */
+    .filter-by__value {
+      font-size: 16px; font-weight: 400; line-height: 16px;
+      color: rgba(0,0,0,0.9); white-space: nowrap;
+    }
+
+    /* ── Bookstore — template grid ───────────────────── */
+    /* gap:16px between filter-bar and bookstore, px:80px */
+    .bookstore { padding: 16px 80px 48px; }
+    .template-grid { display: flex; flex-wrap: wrap; gap: 24px; }
+
+    /* andes-card | template card | shadow: flat | radius:4px */
+    .template-card {
+      position: relative;
+      background: #FFFFFF;
+      border-radius: 4px;
+      box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.12);
+      width: 228px; cursor: pointer;
+    }
+    .template-card:hover { box-shadow: 0px 2px 8px 0px rgba(0,0,0,0.14); }
+
+    /* Thumbnail — 228x228 | overflow: clip | p:12px */
+    .template-card__thumb {
+      position: relative;
+      width: 228px; height: 228px;
+      border-radius: 4px 4px 0 0;
+      overflow: hidden;
+      padding: 12px;
+    }
+    .template-card__thumb-img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; border-radius: 4px 4px 0 0;
+    }
+    .template-card__thumb-header { position: relative; z-index: 2; }
+
+    /* andes-badge | Category | small | loud | color:white */
+    .badge-category {
+      display: inline-flex; align-items: center;
+      height: 20px; padding: 0 8px;
+      background: #FFFFFF; border-radius: 10px;
+      font-size: 12px; font-weight: 600; line-height: 15px;
+      color: rgba(0,0,0,0.9); white-space: nowrap;
+    }
+
+    /* Description row — px:12 py:8 | h:49px */
+    .template-card__desc {
+      padding: 8px 12px; height: 49px;
+      display: flex; flex-direction: column; gap: 2px;
+      justify-content: center;
+    }
+    /* Body/S-semibold */
+    .template-card__name {
+      font-size: 14px; font-weight: 600; line-height: 18px;
+      color: rgba(0,0,0,0.9);
+    }
+    /* Body/XS */
+    .template-card__date {
+      font-size: 12px; font-weight: 400; line-height: 15px;
+      color: rgba(0,0,0,0.55);
+    }
+
+    /* Hover state — 2px blue border overlay | radius:6px */
+    .template-card:hover::after {
+      content: '';
+      position: absolute;
+      inset: -0.23px 0 0 0;
+      border: 2px solid #3483FA;
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    /* ── Floating menu — Figma 32:5405 ───────────────── */
+    .filter-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 4px 0;
+      min-width: 220px;
+      z-index: 50;
+      display: none;
+    }
+    .filter-dropdown.open { display: block; }
+    /* andes-list option */
+    .filter-dropdown__option {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 20px;
+      color: rgba(0,0,0,0.9);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .filter-dropdown__option:hover { background: rgba(0,0,0,0.04); }
+    /* Active option — #3483FA + semibold + pipe */
+    .filter-dropdown__option--active {
+      color: #3483FA;
+      font-weight: 600;
+    }
+    .filter-dropdown__option--active::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      bottom: 2px;
+      width: 2px;
+      background: #3483FA;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER — _Base/Header/Create&Edit -->
+  <header class="header">
+    <div class="header__inner">
+      <!-- _Base/Action Back -->
+      <nav class="breadcrumb">
+        <a href="Contenido.html" class="breadcrumb__back">
+          <svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" aria-hidden="true">
+            <path d="M4 1L1 4.5L4 8" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="breadcrumb__back-text">Volver a Contenido</span>
+        </a>
+        <div class="breadcrumb__divider"></div>
+        <span class="breadcrumb__current">Nueva comunicación</span>
+      </nav>
+      <!-- Title/M -->
+      <h1 class="page-title">Definir plantilla</h1>
+    </div>
+  </header>
+
+  <!-- ACTION ZONE — franja #EDEDED | h:148px -->
+  <div class="action-zone">
+    <div class="canal-row">
+
+      <!-- Canal-Button 1 | Usar drag & drop -->
+      <a href="#" class="canal-card canal-card--1">
+        <div class="canal-card__icon">
+          <!-- Icon arrastras | 48x48 -->
+          <svg width="48" height="48" overflow="visible" viewBox="0 0 49 50" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="23" y="24" width="25" height="25" rx="6" stroke="#3483FA" stroke-width="2"/><rect x="1" y="1" width="25" height="25" rx="6" stroke="#3483FA" stroke-width="2" stroke-dasharray="4 4"/><path d="M34.2176 18.6332L30.1414 14.6813C28.082 13.0326 26.235 14.7362 25.8953 15.9986C23.4963 14.6813 21.7978 17.151 22.1588 18.1392C19.0337 17.3489 18.2524 20.2797 18.9322 21.4325C16.0232 20.6071 15.5139 23.4064 16.3845 24.3965L18.2524 26.3725C17.1654 31.1148 19.2715 33.1786 20.4604 33.6177C23.8572 34.3313 31.3642 34.5399 34.2176 29.6658C37.071 24.7917 36.0646 21.1011 34.2176 18.6332Z" fill="white"/><path d="M18.2524 26.3725C17.1654 31.1148 19.2715 33.1786 20.4604 33.6177C23.8572 34.3313 31.3642 34.5399 34.2176 29.6658C37.071 24.7917 36.0646 21.1011 34.2176 18.6332L30.1414 14.6813C28.082 13.0326 26.235 14.7362 25.8953 15.9986M18.2524 26.3725L16.3845 24.3965C15.5139 23.4064 16.0232 20.6071 18.9322 21.4325M18.2524 26.3725L22.1588 29.9949M18.9322 21.4325C18.2524 20.2797 19.0337 17.3489 22.1588 18.1392M18.9322 21.4325L22.1588 24.3965M22.1588 18.1392C21.7978 17.151 23.4963 14.6813 25.8953 15.9986M22.1588 18.1392L24.3667 20.2797M25.8953 15.9986L27.0842 17.151" stroke="#3483FA" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="canal-card__body">
+          <span class="canal-card__title">Usar drag &amp; drop</span>
+          <span class="canal-card__subtitle">Diseña desde cero</span>
+        </div>
+      </a>
+
+      <!-- Canal-Button 2 | Escribir código -->
+      <a href="#" class="canal-card canal-card--2">
+        <div class="canal-card__icon">
+          <!-- Code icon | 44x24 -->
+          <svg width="44" height="24" overflow="visible" viewBox="0 0 48.25 26.0005" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.125 5.00024L2.125 13.0002L17.125 21.0002" stroke="#3483FA" stroke-width="2" stroke-linecap="round"/><path d="M27.125 1.00024L21.125 25.0002" stroke="#3483FA" stroke-width="2" stroke-linecap="round"/><path d="M31.125 5.00024L46.125 13.0002L31.125 21.0002" stroke="#3483FA" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="canal-card__body">
+          <span class="canal-card__title">Escribir código</span>
+          <span class="canal-card__subtitle">Empieza desde cero</span>
+        </div>
+      </a>
+
+      <!-- Canal-Button 3 | Subir un archivo -->
+      <a href="#" class="canal-card canal-card--3">
+        <div class="canal-card__icon">
+          <!-- Upload icon | 36x36 -->
+          <svg width="36" height="36" overflow="visible" viewBox="0 0 29.25 29.716" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.5 4.30698L5.625 12.182L4.03401 10.591L14.625 0L25.216 10.591L23.625 12.182L15.75 4.30698V22.966H13.5V4.30698Z" fill="#3483FA"/><path d="M0 20.716V26.341C0 28.205 1.51104 29.716 3.375 29.716H25.875C27.739 29.716 29.25 28.205 29.25 26.341V20.716H27V26.341C27 26.9623 26.4963 27.466 25.875 27.466H3.375C2.75368 27.466 2.25 26.9623 2.25 26.341V20.716H0Z" fill="#3483FA"/></svg>
+        </div>
+        <div class="canal-card__body">
+          <span class="canal-card__title">Subir un archivo</span>
+          <span class="canal-card__subtitle">Importa un HTML</span>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div class="library">
+
+    <!-- Filter bar — sticky top:0 | Search + Filtrar por -->
+    <div class="filter-bar">
+      <!-- Title/XS -->
+      <span class="filter-bar__title">Elegir de la Librería</span>
+
+      <div class="filter-bar__controls">
+        <!-- andes-searchbox | simple | idle -->
+        <div class="searchbox">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+            <path d="M10.5 10.5L13.5 13.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input class="searchbox__input" type="search" placeholder="Search">
+        </div>
+
+        <!-- andes-dropdown | text style | _standalone/BASE/medium -->
+        <div class="filter-by">
+          <span class="filter-by__label">Filtrar por</span>
+          <div class="filter-by__select" onclick="toggleFilterMenu(event)">
+            <span class="filter-by__value" id="filterValue">Últimos creados</span>
+            <!-- ChevronDown | 12px -->
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="rgba(0,0,0,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <!-- Floating menu — Figma 32:5405 -->
+          <div class="filter-dropdown" id="filterDropdown">
+            <div class="filter-dropdown__option filter-dropdown__option--active" onclick="selectFilter(event, 'Últimos creados')">Últimos creados</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'Más antiguos')">Más antiguos</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'A a la Z')">A a la Z</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'Predefinidas')">Predefinidas</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'Código')">Código</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'Drag &amp; drop - Andes X')">Drag &amp; drop - Andes X</div>
+            <div class="filter-dropdown__option" onclick="selectFilter(event, 'Drag &amp; drop - Legacy')">Drag &amp; drop - Legacy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookstore — template cards grid -->
+    <div class="bookstore">
+      <div class="template-grid">
+
+        <!-- Card plantilla: Transacional -->
+        <div class="template-card" onclick="window.location.href='email-builder.html'">
+          <!-- Thumbnail | 228x228 | p:12px -->
+          <div class="template-card__thumb">
+            <img class="template-card__thumb-img"
+              src="https://www.figma.com/api/mcp/asset/b197ff7a-fffb-4397-818f-56defebf1494"
+              alt="Transacional">
+            <div class="template-card__thumb-header">
+              <!-- andes-badge | Category | small | loud | white -->
+              <span class="badge-category">Predefinida</span>
+            </div>
+          </div>
+          <!-- Description | px:12 py:8 | h:49px -->
+          <div class="template-card__desc">
+            <span class="template-card__name">Transacional</span>
+            <span class="template-card__date">Creada el 12 de Marzo</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleFilterMenu(e) {
+      e.stopPropagation();
+      document.getElementById('filterDropdown').classList.toggle('open');
+    }
+    function selectFilter(e, value) {
+      e.stopPropagation();
+      var dropdown = document.getElementById('filterDropdown');
+      // Update active state
+      dropdown.querySelectorAll('.filter-dropdown__option').forEach(function(opt) {
+        opt.classList.remove('filter-dropdown__option--active');
+      });
+      e.currentTarget.classList.add('filter-dropdown__option--active');
+      // Update label
+      document.getElementById('filterValue').textContent = value;
+      dropdown.classList.remove('open');
+    }
+    // Close on outside click
+    document.addEventListener('click', function() {
+      document.getElementById('filterDropdown').classList.remove('open');
+    });
+  </script>
+</body>
+</html>

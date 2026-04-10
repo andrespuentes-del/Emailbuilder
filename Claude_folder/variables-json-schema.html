@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Variables (JSON Schema) - UX UI</title>
+  <style>
+    :root{
+      --bg:#f6f8ff;
+      --card:#ffffff;
+      --card-2:#fbfcff;
+      --text:#0f172a;
+      --muted:#475569;
+      --muted-2:#64748b;
+      --border:rgba(15, 23, 42, .12);
+      --primary:#4f46e5;
+      --primary-2:#7c3aed;
+      --danger:#e11d48;
+      --warning:#b45309;
+      --ok:#047857;
+      --chip:#eef2ff;
+      --shadow: 0 14px 40px rgba(15,23,42,.12);
+      --radius:14px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(79,70,229,.12), transparent 55%),
+        radial-gradient(900px 700px at 90% 10%, rgba(124,58,237,.10), transparent 50%),
+        var(--bg);
+      color:var(--text);
+    }
+    .app{max-width:1200px;margin:0 auto;padding:26px 18px 60px;}
+    .topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
+    .title h1{font-size:20px;margin:0 0 6px;letter-spacing:.2px;}
+    .title p{margin:0;color:var(--muted);font-size:13px;line-height:1.45;max-width:980px;}
+    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.85);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:650;
+      font-size:13px;
+      transition:.15s ease;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      box-shadow: 0 1px 0 rgba(15,23,42,.03);
+    }
+    .btn:hover{transform:translateY(-1px); box-shadow: 0 8px 24px rgba(15,23,42,.10)}
+    .btn.primary{
+      background:linear-gradient(135deg, var(--primary), var(--primary-2));
+      border-color:transparent;
+      color:#fff;
+    }
+    .btn.danger{
+      background:rgba(225,29,72,.08);
+      border-color:rgba(225,29,72,.22);
+      color:var(--danger);
+    }
+    .btn.small{padding:8px 10px;border-radius:10px;font-size:12px;}
+
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel + .panel{ margin-top:14px; }
+
+    .panel-head{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      background:linear-gradient(180deg, rgba(79,70,229,.05), rgba(255,255,255,0));
+    }
+    .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+    .field{
+      display:flex;align-items:center;gap:8px;
+      border:1px solid var(--border);
+      background:var(--card-2);
+      padding:10px 10px;border-radius:12px;min-height:40px;
+    }
+    .field label{font-size:12px;color:var(--muted);white-space:nowrap;}
+    .field input,.field select{
+      background:transparent;border:none;outline:none;color:var(--text);
+      font-size:13px;min-width:140px;
+    }
+    .field input::placeholder{color:rgba(71,85,105,.65)}
+    .field select option{color:#111}
+
+    table{width:100%;border-collapse:separate;border-spacing:0;}
+    thead th{
+      text-align:left;font-size:12px;color:var(--muted);
+      font-weight:750;padding:12px 14px;border-bottom:1px solid var(--border);
+      background:rgba(15,23,42,.02);
+    }
+    tbody td{padding:12px 14px;border-bottom:1px solid rgba(15,23,42,.06);vertical-align:middle;font-size:13px;}
+    tbody tr:hover td{background:rgba(79,70,229,.03)}
+    tbody tr:last-child td{border-bottom:none;}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .muted{color:var(--muted)}
+    .row-actions{display:flex;gap:8px;justify-content:flex-end;}
+    .pill{
+      font-size:12px;color:var(--muted);
+      padding:6px 10px;border:1px solid var(--border);
+      border-radius:999px;background:var(--card-2);
+      display:inline-flex;gap:8px;align-items:center;
+      white-space:nowrap;
+    }
+
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;
+      background:var(--chip);border:1px solid rgba(79,70,229,.18);
+      font-size:12px;line-height:1;color:var(--text);
+      max-width:380px;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--muted-2);}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warning)}
+    .dot.req{background:var(--primary)}
+    .dot.opt{background:rgba(15,23,42,.35)}
+    .dot.type{background:#2563eb}
+
+    /* Badges tipo */
+    .type-badge{
+      display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
+      font-size:11px;font-weight:600;font-family:ui-monospace,monospace;
+    }
+    .type-string{background:#eff6ff;color:#1d4ed8;border:1px solid rgba(29,78,216,.18)}
+    .type-number,.type-integer{background:#fdf4ff;color:#7e22ce;border:1px solid rgba(126,34,206,.18)}
+    .type-boolean{background:#f0fdf4;color:#15803d;border:1px solid rgba(21,128,61,.18)}
+    .type-enum{background:#fff7ed;color:#c2410c;border:1px solid rgba(194,65,12,.18)}
+    .type-array{background:#f0f9ff;color:#0369a1;border:1px solid rgba(3,105,161,.18)}
+    .type-object{background:#fafaf9;color:#44403c;border:1px solid rgba(68,64,60,.18)}
+    .type-date-time{background:#fdf2f8;color:#9d174d;border:1px solid rgba(157,23,77,.18)}
+
+    .req-badge{
+      display:inline-flex;align-items:center;gap:5px;font-size:12px;
+    }
+
+    /* Empty state */
+    .empty{
+      padding:48px 24px;text-align:center;color:var(--muted);
+    }
+    .empty p{margin:8px 0 0;font-size:13px;}
+
+    /* Drawer */
+    .backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);opacity:0;pointer-events:none;transition:.18s ease;z-index:100;}
+    .backdrop.show{opacity:1;pointer-events:auto;}
+    .drawer{
+      position:fixed;top:0;right:0;height:100%;width:min(620px, 100%);
+      background:var(--card);
+      border-left:1px solid var(--border);
+      box-shadow: var(--shadow);
+      transform:translateX(102%);
+      transition:.22s ease;
+      display:flex;flex-direction:column;
+      z-index:101;
+    }
+    .drawer.show{transform:translateX(0)}
+    .drawer-head{
+      padding:14px 16px 10px;border-bottom:1px solid var(--border);
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      background:linear-gradient(180deg, rgba(79,70,229,.06), rgba(255,255,255,0));
+    }
+    .drawer-head h2{margin:0;font-size:16px;}
+    .drawer-head p{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.45;}
+    .drawer-body{padding:12px 16px;overflow:auto;flex:1;}
+    .section{
+      background:var(--card-2);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:12px;
+    }
+    .section h3{margin:0 0 10px;font-size:13px;letter-spacing:.2px;}
+    .grid{display:grid;grid-template-columns: 1fr 1fr;gap:10px;}
+    .grid.full{grid-template-columns:1fr;}
+    .control{display:flex;flex-direction:column;gap:6px;}
+    .control > label{font-size:12px;color:var(--muted);}
+    .input,.textarea,.select{
+      background:#fff;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:12px;
+      padding:10px 10px;
+      color:var(--text);
+      outline:none;
+      font-size:13px;
+      width:100%;
+    }
+    .input:focus,.textarea:focus,.select:focus{
+      border-color:rgba(79,70,229,.55);
+      box-shadow:0 0 0 4px rgba(79,70,229,.10);
+    }
+    .textarea{min-height:72px;resize:vertical}
+    .help{font-size:12px;color:var(--muted);line-height:1.35;}
+    .switch-row{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:10px;border-radius:12px;border:1px solid rgba(15,23,42,.12);
+      background:#fff;
+    }
+    .switch-row .left{display:flex;flex-direction:column;gap:3px;}
+    .switch-row strong{font-size:13px}
+    .switch-row span{font-size:12px;color:var(--muted)}
+    .switch{
+      position:relative;width:46px;height:28px;border-radius:999px;
+      background:rgba(15,23,42,.10);
+      border:1px solid rgba(15,23,42,.16);
+      cursor:pointer;flex:0 0 auto;
+    }
+    .switch::after{
+      content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:999px;
+      background:#fff;transition:.16s ease;
+      box-shadow: 0 2px 8px rgba(15,23,42,.18);
+    }
+    .switch.on{background:rgba(79,70,229,.55);border-color:rgba(79,70,229,.55)}
+    .switch.on::after{left:21px}
+    .drawer-foot{
+      padding:12px 16px;border-top:1px solid var(--border);
+      display:flex;justify-content:space-between;gap:10px;
+      background:rgba(15,23,42,.02);
+    }
+
+    /* Schema preview */
+    .schema-tools{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      flex-wrap:wrap;
+    }
+    .schema-title{font-size:13px;font-weight:650;display:flex;align-items:center;gap:8px;}
+    .code{
+      margin-top:10px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#0b1020;
+      color:#e5e7eb;
+      overflow:auto;
+      max-height:420px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+      font-size:12.5px;
+      line-height:1.65;
+      white-space:pre;
+    }
+
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+      background:rgba(4,120,87,.08);border:1px solid rgba(4,120,87,.22);
+      color:#065f46;font-size:12px;margin-left:8px;
+    }
+
+    /* Toast */
+    .toast{
+      position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);
+      background:#0f172a;color:#f8fafc;padding:10px 18px;border-radius:12px;
+      font-size:13px;font-weight:500;opacity:0;pointer-events:none;
+      transition:.18s ease;z-index:200;white-space:nowrap;
+      box-shadow:0 8px 24px rgba(15,23,42,.28);
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+    @media (max-width: 860px){
+      .grid{grid-template-columns:1fr}
+      .panel-head{flex-direction:column;align-items:stretch}
+      .actions{justify-content:flex-start}
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div class="title">
+      <h1>Variables del template (JSON Schema)</h1>
+      <p>
+        Define variables obligatorias y opcionales, su tipo, validaciones y valores por defecto.
+        Las variables se renderizan en Freemarker como <span class="mono">${payload.variable}</span>.
+      </p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnValidate">✓ Validar template</button>
+      <button class="btn primary" id="btnNew">＋ Nueva variable</button>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="filters">
+        <div class="field">
+          <label for="q">Buscar</label>
+          <input id="q" placeholder="firstName, user, items..." />
+        </div>
+        <div class="field">
+          <label for="fType">Tipo</label>
+          <select id="fType">
+            <option value="">Todos</option>
+            <option>string</option>
+            <option>number</option>
+            <option>integer</option>
+            <option>boolean</option>
+            <option>enum</option>
+            <option>date-time</option>
+            <option>array</option>
+            <option>object</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fReq">Requisito</label>
+          <select id="fReq">
+            <option value="">Todos</option>
+            <option value="required">Obligatoria</option>
+            <option value="optional">Opcional</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fDef">Default</label>
+          <select id="fDef">
+            <option value="">Todos</option>
+            <option value="with">Con default</option>
+            <option value="without">Sin default</option>
+          </select>
+        </div>
+      </div>
+      <div class="pill">
+        <span class="dot type"></span>
+        <span id="counter">0 variables</span>
+      </div>
+    </div>
+
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:180px">Nombre</th>
+            <th style="min-width:120px">Tipo</th>
+            <th style="min-width:140px">Requerida</th>
+            <th style="min-width:200px">Default</th>
+            <th>Descripción</th>
+            <th style="min-width:160px;text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SCHEMA PREVIEW -->
+  <div class="panel" style="margin-top:14px;">
+    <div class="panel-head">
+      <div class="schema-tools">
+        <span class="schema-title">
+          JSON Schema generado
+          <span class="badge" id="schemaStatus">● válido</span>
+        </span>
+      </div>
+      <button class="btn small" id="btnCopy">⎘ Copiar</button>
+    </div>
+    <div style="padding:12px 14px;">
+      <pre class="code" id="schemaOutput">{}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- BACKDROP -->
+<div class="backdrop" id="backdrop" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <h2 id="drawerTitle">Nueva variable</h2>
+      <p id="drawerSub">Completa los campos para agregar una variable al schema.</p>
+    </div>
+    <button class="btn small" onclick="closeDrawer()">✕</button>
+  </div>
+
+  <div class="drawer-body">
+    <input type="hidden" id="editIndex" value="-1" />
+
+    <!-- Identidad -->
+    <div class="section">
+      <h3>Identidad</h3>
+      <div class="grid">
+        <div class="control">
+          <label for="fName">Nombre de la variable *</label>
+          <input class="input mono" id="fName" placeholder="ej: firstName" />
+          <span class="help">Nombre del campo en <span class="mono">${payload.nombre}</span></span>
+        </div>
+        <div class="control">
+          <label for="fType2">Tipo *</label>
+          <select class="select" id="fType2">
+            <option value="string">string</option>
+            <option value="number">number</option>
+            <option value="integer">integer</option>
+            <option value="boolean">boolean</option>
+            <option value="enum">enum</option>
+            <option value="date-time">date-time</option>
+            <option value="array">array</option>
+            <option value="object">object</option>
+          </select>
+        </div>
+        <div class="control" style="grid-column:1/-1">
+          <label for="fDesc">Descripción</label>
+          <textarea class="textarea" id="fDesc" placeholder="¿Para qué se usa esta variable?"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comportamiento -->
+    <div class="section">
+      <h3>Comportamiento</h3>
+      <div class="grid full">
+        <div class="switch-row">
+          <div class="left">
+            <strong>Obligatoria</strong>
+            <span>El template no renderiza sin este valor</span>
+          </div>
+          <div class="switch" id="swRequired" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="switch-row" style="margin-top:8px;">
+          <div class="left">
+            <strong>Nullable</strong>
+            <span>Permite que el valor sea null</span>
+          </div>
+          <div class="switch" id="swNullable" onclick="toggleSwitch(this)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validaciones -->
+    <div class="section" id="secValidations">
+      <h3>Validaciones</h3>
+      <div class="grid" id="validationFields">
+        <!-- se inyecta dinámicamente según el tipo -->
+      </div>
+    </div>
+
+    <!-- Default -->
+    <div class="section">
+      <h3>Valor por defecto</h3>
+      <div class="control">
+        <label for="fDefault">Default</label>
+        <input class="input" id="fDefault" placeholder="Dejar vacío si no aplica" />
+        <span class="help">Se usa cuando el payload no incluye la variable.</span>
+      </div>
+    </div>
+
+    <!-- Enum values -->
+    <div class="section" id="secEnum" style="display:none">
+      <h3>Valores del enum</h3>
+      <div class="control">
+        <label for="fEnum">Valores permitidos</label>
+        <input class="input mono" id="fEnum" placeholder="activo, inactivo, pendiente" />
+        <span class="help">Separados por coma.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-foot">
+    <button class="btn danger small" id="btnDeleteDrawer" style="display:none" onclick="deleteFromDrawer()">Eliminar variable</button>
+    <div style="display:flex;gap:10px;margin-left:auto;">
+      <button class="btn small" onclick="closeDrawer()">Cancelar</button>
+      <button class="btn primary small" onclick="saveVariable()">Guardar variable</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Estado ──────────────────────────────────────────
+  var vars = [
+    { name:'firstName', type:'string', required:true,  nullable:false, description:'Nombre del destinatario', defaultVal:'', minLength:'2', maxLength:'80', pattern:'', enumVals:'' },
+    { name:'amount',    type:'number', required:true,  nullable:false, description:'Monto de la transacción', defaultVal:'', min:'0', max:'', enumVals:'' },
+    { name:'status',    type:'enum',   required:true,  nullable:false, description:'Estado del pago',         defaultVal:'pendiente', enumVals:'aprobado, rechazado, pendiente' },
+    { name:'dueDate',   type:'date-time', required:false, nullable:true, description:'Fecha de vencimiento',  defaultVal:'', enumVals:'' },
+    { name:'items',     type:'array',  required:false, nullable:false, description:'Lista de productos',      defaultVal:'[]', enumVals:'' },
+  ];
+
+  // ── Render tabla ────────────────────────────────────
+  function renderTable() {
+    var q     = document.getElementById('q').value.toLowerCase();
+    var fType = document.getElementById('fType').value;
+    var fReq  = document.getElementById('fReq').value;
+    var fDef  = document.getElementById('fDef').value;
+
+    var filtered = vars.filter(function(v) {
+      if (q && !v.name.toLowerCase().includes(q) && !(v.description||'').toLowerCase().includes(q)) return false;
+      if (fType && v.type !== fType) return false;
+      if (fReq === 'required' && !v.required) return false;
+      if (fReq === 'optional' && v.required) return false;
+      if (fDef === 'with' && !v.defaultVal) return false;
+      if (fDef === 'without' && v.defaultVal) return false;
+      return true;
+    });
+
+    var tbody = document.getElementById('rows');
+    document.getElementById('counter').textContent = vars.length + ' variable' + (vars.length !== 1 ? 's' : '');
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div style="font-size:28px">∅</div><p>No hay variables que coincidan con los filtros.</p></div></td></tr>';
+      renderSchema();
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(function(v) {
+      var idx = vars.indexOf(v);
+      var typeCls = 'type-' + v.type.replace('-','');
+      var reqDot  = v.required ? '<span class="dot req"></span> Obligatoria' : '<span class="dot opt"></span> Opcional';
+      var defVal  = v.defaultVal ? '<span class="chip mono">' + esc(v.defaultVal) + '</span>' : '<span class="muted">—</span>';
+      return '<tr>' +
+        '<td><span class="mono" style="font-weight:600">' + esc(v.name) + '</span></td>' +
+        '<td><span class="type-badge ' + typeCls + '">' + esc(v.type) + '</span></td>' +
+        '<td><span class="req-badge">' + reqDot + '</span></td>' +
+        '<td>' + defVal + '</td>' +
+        '<td class="muted" style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.description||'—') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button class="btn small" onclick="editVar(' + idx + ')">Editar</button>' +
+          '<button class="btn small danger" onclick="deleteVar(' + idx + ')">Eliminar</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
+
+    renderSchema();
+  }
+
+  // ── JSON Schema ─────────────────────────────────────
+  function renderSchema() {
+    var schema = { '$schema': 'http://json-schema.org/draft-07/schema#', type: 'object', properties: {}, required: [] };
+    vars.forEach(function(v) {
+      var prop = {};
+      if (v.type === 'enum') {
+        prop.type = 'string';
+        if (v.enumVals) prop['enum'] = v.enumVals.split(',').map(function(s){ return s.trim(); });
+      } else if (v.type === 'date-time') {
+        prop.type = 'string'; prop.format = 'date-time';
+      } else {
+        prop.type = v.type;
+      }
+      if (v.description) prop.description = v.description;
+      if (v.nullable)    prop.type = [prop.type, 'null'];
+      if (v.defaultVal !== '') {
+        try { prop['default'] = JSON.parse(v.defaultVal); }
+        catch(e) { prop['default'] = v.defaultVal; }
+      }
+      if (v.minLength) prop.minLength = parseInt(v.minLength);
+      if (v.maxLength) prop.maxLength = parseInt(v.maxLength);
+      if (v.pattern)   prop.pattern   = v.pattern;
+      if (v.min !== undefined && v.min !== '') prop.minimum = parseFloat(v.min);
+      if (v.max !== undefined && v.max !== '') prop.maximum = parseFloat(v.max);
+      schema.properties[v.name] = prop;
+      if (v.required) schema.required.push(v.name);
+    });
+    if (!schema.required.length) delete schema.required;
+    document.getElementById('schemaOutput').textContent = JSON.stringify(schema, null, 2);
+    var badge = document.getElementById('schemaStatus');
+    badge.textContent = vars.length ? '● válido' : '● vacío';
+    badge.style.background = vars.length ? 'rgba(4,120,87,.08)' : 'rgba(15,23,42,.06)';
+    badge.style.color = vars.length ? '#065f46' : '#475569';
+  }
+
+  // ── Drawer ───────────────────────────────────────────
+  function openDrawer(idx) {
+    document.getElementById('backdrop').classList.add('show');
+    document.getElementById('drawer').classList.add('show');
+    document.getElementById('editIndex').value = idx !== undefined ? idx : -1;
+
+    var isEdit = idx !== undefined && idx >= 0;
+    document.getElementById('drawerTitle').textContent = isEdit ? 'Editar variable' : 'Nueva variable';
+    document.getElementById('drawerSub').textContent = isEdit ? 'Modifica los campos de la variable.' : 'Completa los campos para agregar una variable al schema.';
+    document.getElementById('btnDeleteDrawer').style.display = isEdit ? '' : 'none';
+
+    var v = isEdit ? vars[idx] : { name:'', type:'string', required:false, nullable:false, description:'', defaultVal:'', minLength:'', maxLength:'', pattern:'', min:'', max:'', enumVals:'' };
+    document.getElementById('fName').value    = v.name;
+    document.getElementById('fType2').value   = v.type;
+    document.getElementById('fDesc').value    = v.description || '';
+    document.getElementById('fDefault').value = v.defaultVal || '';
+    document.getElementById('fEnum').value    = v.enumVals || '';
+    setSwitch('swRequired', v.required);
+    setSwitch('swNullable', v.nullable);
+    updateDrawerFields(v.type);
+    if (isEdit) {
+      document.getElementById('fName').dispatchEvent(new Event('input'));
+      // restore validation values
+      var vf = document.getElementById('validationFields');
+      if (v.minLength !== undefined) setField(vf, 'fMinLength', v.minLength);
+      if (v.maxLength !== undefined) setField(vf, 'fMaxLength', v.maxLength);
+      if (v.pattern   !== undefined) setField(vf, 'fPattern',   v.pattern);
+      if (v.min       !== undefined) setField(vf, 'fMin',       v.min);
+      if (v.max       !== undefined) setField(vf, 'fMax',       v.max);
+    }
+  }
+
+  function setField(parent, id, val) {
+    var el = parent.querySelector('#' + id);
+    if (el && val !== undefined) el.value = val;
+  }
+
+  function closeDrawer() {
+    document.getElementById('backdrop').classList.remove('show');
+    document.getElementById('drawer').classList.remove('show');
+  }
+
+  function updateDrawerFields(type) {
+    var vf = document.getElementById('validationFields');
+    var secEnum = document.getElementById('secEnum');
+    secEnum.style.display = type === 'enum' ? '' : 'none';
+
+    var html = '';
+    if (type === 'string') {
+      html =
+        '<div class="control"><label for="fMinLength">minLength</label><input class="input mono" id="fMinLength" placeholder="ej: 1" /></div>' +
+        '<div class="control"><label for="fMaxLength">maxLength</label><input class="input mono" id="fMaxLength" placeholder="ej: 255" /></div>' +
+        '<div class="control" style="grid-column:1/-1"><label for="fPattern">pattern (regex)</label><input class="input mono" id="fPattern" placeholder="ej: ^[A-Za-z]+$" /></div>';
+    } else if (type === 'number' || type === 'integer') {
+      html =
+        '<div class="control"><label for="fMin">minimum</label><input class="input mono" id="fMin" placeholder="ej: 0" /></div>' +
+        '<div class="control"><label for="fMax">maximum</label><input class="input mono" id="fMax" placeholder="ej: 999999" /></div>';
+    } else {
+      html = '<div class="control" style="grid-column:1/-1"><p class="help" style="margin:0">No hay validaciones adicionales para este tipo.</p></div>';
+    }
+    vf.innerHTML = html;
+  }
+
+  document.getElementById('fType2').addEventListener('change', function() {
+    updateDrawerFields(this.value);
+  });
+
+  function toggleSwitch(el) {
+    el.classList.toggle('on');
+  }
+  function setSwitch(id, val) {
+    var el = document.getElementById(id);
+    if (val) el.classList.add('on'); else el.classList.remove('on');
+  }
+
+  function saveVariable() {
+    var name = document.getElementById('fName').value.trim();
+    if (!name) { showToast('El nombre es obligatorio.'); return; }
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) { showToast('Nombre inválido. Usa solo letras, números y _.'); return; }
+
+    var idx   = parseInt(document.getElementById('editIndex').value);
+    var type  = document.getElementById('fType2').value;
+    var vf    = document.getElementById('validationFields');
+    var v = {
+      name:        name,
+      type:        type,
+      required:    document.getElementById('swRequired').classList.contains('on'),
+      nullable:    document.getElementById('swNullable').classList.contains('on'),
+      description: document.getElementById('fDesc').value.trim(),
+      defaultVal:  document.getElementById('fDefault').value.trim(),
+      enumVals:    document.getElementById('fEnum').value.trim(),
+      minLength:   getFieldVal(vf, 'fMinLength'),
+      maxLength:   getFieldVal(vf, 'fMaxLength'),
+      pattern:     getFieldVal(vf, 'fPattern'),
+      min:         getFieldVal(vf, 'fMin'),
+      max:         getFieldVal(vf, 'fMax'),
+    };
+
+    // Verificar nombre duplicado
+    var dupIdx = vars.findIndex(function(x, i) { return x.name === name && i !== idx; });
+    if (dupIdx >= 0) { showToast('Ya existe una variable con ese nombre.'); return; }
+
+    if (idx >= 0) { vars[idx] = v; showToast('Variable actualizada.'); }
+    else          { vars.push(v); showToast('Variable creada.'); }
+
+    closeDrawer();
+    renderTable();
+  }
+
+  function getFieldVal(parent, id) {
+    var el = parent ? parent.querySelector('#' + id) : null;
+    return el ? el.value.trim() : '';
+  }
+
+  function editVar(idx) { openDrawer(idx); }
+
+  function deleteVar(idx) {
+    if (!confirm('¿Eliminar la variable "' + vars[idx].name + '"?')) return;
+    vars.splice(idx, 1);
+    renderTable();
+    showToast('Variable eliminada.');
+  }
+
+  function deleteFromDrawer() {
+    var idx = parseInt(document.getElementById('editIndex').value);
+    if (idx < 0) return;
+    if (!confirm('¿Eliminar la variable "' + vars[idx].name + '"?')) return;
+    vars.splice(idx, 1);
+    closeDrawer();
+    renderTable();
+    showToast('Variable eliminada.');
+  }
+
+  // ── Validar template ────────────────────────────────
+  document.getElementById('btnValidate').addEventListener('click', function() {
+    var req = vars.filter(function(v){ return v.required && !v.defaultVal; });
+    if (!vars.length) { showToast('No hay variables definidas.'); return; }
+    if (req.length) {
+      showToast(req.length + ' variable(s) obligatoria(s) sin default: ' + req.map(function(v){ return v.name; }).join(', '));
+    } else {
+      showToast('✓ Template válido — ' + vars.length + ' variable(s) configuradas.');
+    }
+  });
+
+  // ── Copiar schema ───────────────────────────────────
+  document.getElementById('btnCopy').addEventListener('click', function() {
+    var text = document.getElementById('schemaOutput').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('Schema copiado al portapapeles.');
+    }).catch(function() {
+      showToast('No se pudo copiar. Seleccioná el texto manualmente.');
+    });
+  });
+
+  // ── Filtros ──────────────────────────────────────────
+  ['q','fType','fReq','fDef'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', renderTable);
+    document.getElementById(id).addEventListener('change', renderTable);
+  });
+
+  document.getElementById('btnNew').addEventListener('click', function() { openDrawer(); });
+
+  // ── Helpers ──────────────────────────────────────────
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  var _toastTimer;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+  }
+
+  // ── Init ─────────────────────────────────────────────
+  renderTable();
+</script>
+</body>
+</html>

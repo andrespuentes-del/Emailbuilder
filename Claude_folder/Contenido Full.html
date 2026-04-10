@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Builder — Contenido</title>
+  <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2&display=swap" rel="stylesheet">
+  <style>
+    /*
+     * Valores extraídos directamente del design context de Figma
+     * via mcp__figma__get_design_context — no approximaciones
+     */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      background: #F5F5F5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    .header {
+      background: #FFFFFF;
+      box-shadow: 0px 1px 2px 0px rgba(0,0,0,0.12);
+      padding-top: 16px;
+      padding-bottom: 0;
+    }
+    .header-inner { padding: 0 80px; }
+
+    /* ── Breadcrumb ──────────────────────────────────── */
+    .breadcrumb { display: flex; align-items: center; gap: 16px; height: 15px; }
+    .breadcrumb__back { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .breadcrumb__back-text { font-size: 12px; font-weight: 400; line-height: 15px; color: #3483FA; }
+    .breadcrumb__divider { width: 1px; height: 10.812px; background: rgba(0,0,0,0.25); }
+    .breadcrumb__current { font-size: 12px; font-weight: 400; line-height: 15px; color: rgba(0,0,0,0.55); }
+
+    /* ── Page title ──────────────────────────────────── */
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 30px;
+      color: rgba(0,0,0,0.9);
+      margin-top: 8px;
+    }
+
+    /* ── Divider ─────────────────────────────────────── */
+    .divider { height: 1px; background: rgba(0,0,0,0.1); width: 100%; }
+
+    /* ── Stepper ─────────────────────────────────────── */
+    .stepper { display: flex; align-items: flex-end; justify-content: space-between; height: 47px; }
+    .steps { display: flex; align-items: flex-end; gap: 8px; list-style: none; }
+    .step { display: flex; flex-direction: column; align-items: center; padding: 0 8px 11px; }
+    .step__content { display: flex; align-items: center; gap: 8px; }
+    .step__label { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+    .step--completed .step__label { color: rgba(0,0,0,0.9); }
+    .step--active { padding: 0 8px 0; }
+    .step--active .step__label { color: #3483FA; }
+    .step--pending .step__label { color: rgba(0,0,0,0.25); }
+    .step__bar { height: 3px; width: 100%; background: #3483FA; border-radius: 3px 3px 0 0; margin-top: 8px; }
+    .step__pill { position: relative; width: 16px; height: 16px; flex-shrink: 0; }
+    .step__pill-number {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 12px; font-weight: 600; line-height: 1; text-align: center;
+    }
+    .step__pill-number--active { color: #FFFFFF; }
+    .step__pill-number--pending { color: rgba(0,0,0,0.1); }
+    .step__chevron { display: flex; align-items: center; justify-content: center; width: 12px; height: 36px; flex-shrink: 0; }
+    .stepper__help { display: flex; align-items: center; gap: 8px; padding: 8px; text-decoration: none; }
+    .stepper__help-icon { width: 20px; height: 20px; position: relative; overflow: hidden; flex-shrink: 0; }
+    .stepper__help-label { font-size: 14px; font-weight: 600; line-height: 18px; color: #3483FA; white-space: nowrap; }
+
+    /* ── Main ────────────────────────────────────────── */
+    .main { flex: 1; padding: 16px 80px 96px; }
+    .card { background: #FFFFFF; padding: 0 32px 32px; position: relative; }
+
+    /* ── Tabs ────────────────────────────────────────── */
+    .tabs-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; position: relative; padding-top: 16px; }
+    .tabs { display: flex; gap: 48px; align-items: flex-start; position: relative; }
+    .tabs::after {
+      content: ''; position: absolute; bottom: 0; left: 0; width: 1142px;
+      height: 1px; background: rgba(0,0,0,0.1);
+    }
+    .tab { display: flex; flex-direction: column; align-items: flex-start; cursor: pointer; }
+    .tab__inner { display: flex; align-items: center; gap: 8px; padding-top: 14px; padding-bottom: 11px; }
+    .tab__label { font-size: 16px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+    .tab--active .tab__label { color: #3483FA; }
+    .tab--inactive .tab__label { color: rgba(0,0,0,0.9); }
+    .tab__dot { width: 8px; height: 8px; border-radius: 4px; background: #FF7733; flex-shrink: 0; }
+    #tab-neutro .tab__dot { background: #00A650; }
+    #tab-voseado .tab__dot { background: #00A650; }
+    #tab-brasil .tab__dot { background: #00A650; }
+    .tab__underline { height: 3px; width: 100%; background: #3483FA; border-radius: 3px 3px 0 0; }
+
+    /* ── Button: + Adaptación ────────────────────────── */
+    .btn-adaptation {
+      display: flex; align-items: center; gap: 4px;
+      height: 32px; padding: 7px 12px 7px 8px;
+      background: rgba(65,137,230,0.15); border: none; border-radius: 5px;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .btn-adaptation:hover { background: rgba(65,137,230,0.25); }
+    .btn-adaptation__text { font-family: inherit; font-size: 14px; font-weight: 600; line-height: 16px; color: #3483FA; }
+
+
+    /* ── Form body ───────────────────────────────────── */
+    .form-body { display: flex; align-items: flex-start; justify-content: space-between; padding-top: 32px; }
+    .form-left { display: flex; flex-direction: column; gap: 32px; width: 665px; }
+    .email-fields { display: flex; flex-direction: column; gap: 24px; }
+
+    /* ── Textfield ───────────────────────────────────── */
+    .textfield { display: flex; flex-direction: column; width: 100%; }
+    .textfield__label { font-size: 14px; font-weight: 400; line-height: 18px; color: rgba(0,0,0,0.9); padding: 0 6px 4px; }
+    .textfield__input {
+      width: 100%; height: 48px; padding: 14px 12px;
+      border: 1px solid rgba(0,0,0,0.25); border-radius: 6px;
+      background: #FFFFFF; font-family: inherit;
+      font-size: 14px; line-height: 20px; color: rgba(0,0,0,0.9); outline: none;
+    }
+    .textfield__input:focus { border-color: #3483FA; }
+    .textfield__helper { font-size: 13px; font-weight: 400; line-height: 18px; color: rgba(0,0,0,0.55); padding: 4px 6px 0; }
+    .textfield__input-wrap { position: relative; width: 100%; }
+    .textfield__icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; display: flex; align-items: center; }
+    .textfield__input.has-icon { padding-right: 40px; }
+
+    /* ── Buttons: Editar / Eliminar plantilla (Andes) ── */
+    .btn-actions-wrap { display: flex; gap: 8px; width: 352px; }
+    /* andes-button | variant: quiet | hierarchy: loud | full-width: true */
+    .btn-quiet {
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 1; height: 48px; padding: 0 24px;
+      background: #E3EEFC;
+      border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .btn-quiet:hover { background: #D0E4FA; }
+    .btn-quiet:active { background: #BBCFE8; }
+    .btn-quiet__text { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 20px; color: #3483FA; white-space: nowrap; pointer-events: none; }
+    /* andes-button | variant: loud | simple — tabs naranja */
+    .btn-simple-wrap { width: 172px; display: none; }
+    .btn-simple-wrap.is-visible { display: block; }
+    /* btn-actions-orange — Editar + Eliminar para tabs no-neutro */
+    #btn-actions-orange.btn-actions-wrap { display: none; }
+    #btn-actions-orange.btn-actions-wrap.is-visible { display: flex; }
+    .btn-simple {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 100%; height: 48px; padding: 0 24px;
+      background: #3483FA; border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .btn-simple:hover { background: #2968C8; }
+    .btn-simple:active { background: #1C5CBF; }
+    .btn-simple__text { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 20px; color: #FFFFFF; pointer-events: none; }
+
+    /* andes-button | variant: transparent | hierarchy: loud | full-width: true */
+    .btn-transparent {
+      display: inline-flex; align-items: center; justify-content: center;
+      flex: 1; height: 48px; padding: 0 24px;
+      background: transparent; border: none; border-radius: 6px;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .btn-transparent:hover { background: rgba(52,131,250,0.08); }
+    .btn-transparent:active { background: rgba(52,131,250,0.15); }
+    .btn-transparent__text { font-family: inherit; font-size: 16px; font-weight: 600; line-height: 20px; color: #3483FA; white-space: nowrap; pointer-events: none; }
+
+    /* ── Vista previa ────────────────────────────────── */
+    .preview-panel { width: 360px; flex-shrink: 0; display: flex; flex-direction: column; gap: 24px; }
+    .preview-panel__label { font-size: 16px; font-weight: 600; line-height: 20px; color: rgba(0,0,0,0.9); }
+    .device {
+      background: #F5F5F5; border: 6px solid #EDEDED;
+      border-radius: 26px; height: 640px; overflow: hidden; position: relative;
+    }
+    .device__home-bar {
+      position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+      width: 53px; height: 5px; background: #EDEDED; border-radius: 8px;
+    }
+    .device__statusbar { width: 348px; height: 27px; position: relative; margin: 10px auto 0; }
+    .device__time { position: absolute; left: 17.37px; top: 7.72px; font-family: 'Exo 2', sans-serif; font-size: 10.61px; color: rgba(0,0,0,0.25); white-space: nowrap; }
+    .device__icons { position: absolute; right: 17.37px; top: 7.72px; display: flex; align-items: center; gap: 3.86px; }
+    .device__battery-text { font-family: 'Exo 2', sans-serif; font-size: 10.61px; color: rgba(0,0,0,0.25); }
+    .email-card {
+      background: #FFFFFF; border-radius: 18.227px; padding: 8px;
+      height: 542px; width: 347px; margin: 20px auto 0;
+      display: flex; flex-direction: column; gap: 12px; overflow: hidden;
+    }
+    .email-header { display: flex; flex-direction: column; gap: 12px; }
+    .email-sender { font-size: 12.151px; line-height: 15.189px; color: rgba(0,0,0,0.8); }
+    .email-hr { height: 1px; background: #EDEDED; }
+    .email-subject { font-size: 12.151px; font-weight: 600; line-height: 15.189px; color: rgba(0,0,0,0.8); }
+    .email-preheader { font-size: 12.151px; font-weight: 400; line-height: 15.189px; color: rgba(0,0,0,0.8); }
+    /* ── Email preview (Skeleton mail.jpg) ──────────── */
+    .email-preview { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; border-radius: 0 0 18.227px 18.227px; }
+    .email-preview::-webkit-scrollbar { width: 3px; }
+    .email-preview::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+    .ep-img { width: 100%; display: block; }
+    /* ── Skeleton mail (device-orange) ──────────────── */
+    .skeleton-mail { background: #F5F5F5; flex: 1; border-radius: 18.227px; overflow: hidden; }
+    .skeleton-mail__header { background: #EDEDED; height: 119px; padding: 8px 10px; display: flex; flex-direction: column; gap: 21px; }
+    .sk-bar { background: rgba(0,0,0,0.25); border-radius: 2.025px; height: 12px; }
+    .skeleton-mail__body { display: flex; flex-direction: column; gap: 16px; align-items: center; padding: 33px 0; width: 230px; margin: 0 auto; }
+    .sk-block { background: #EDEDED; border-radius: 2.025px; width: 100%; }
+
+    /* ── Snackbar ────────────────────────────────────── */
+    .snackbar {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(16px);
+      width: 600px;
+      background: #00A650;
+      padding: 22px 24px; border-radius: 6px;
+      box-shadow: 0px 6px 16px rgba(0,0,0,0.1);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 500;
+    }
+    .snackbar.is-visible {
+      opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto;
+    }
+    .snackbar__text { font-size: 16px; font-weight: 400; line-height: 20px; color: #FFFFFF; }
+
+    /* ── Floating menu: Adaptación ──────────────────── */
+    .adaptation-wrap { position: relative; flex-shrink: 0; margin-top: 6px; }
+
+    .floating-menu {
+      display: none; flex-direction: column;
+      position: absolute; top: calc(100% + 4px); right: 0;
+      width: 280px; background: #FFFFFF;
+      border-radius: 6px; box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.1);
+      padding: 4px 0; z-index: 200;
+    }
+    .floating-menu.is-open { display: flex; }
+
+    /* Searchbox */
+    .fm-search { padding: 8px 12px; }
+    .fm-search__inner {
+      display: flex; align-items: center; gap: 8px;
+      height: 32px; padding: 0 12px;
+      border: 1px solid rgba(0,0,0,0.25); border-radius: 20px;
+    }
+    .fm-search__inner:focus-within { border-color: #3483FA; }
+    .fm-search__input {
+      border: none; outline: none; background: transparent;
+      font-family: inherit; font-size: 14px; line-height: 18px;
+      color: rgba(0,0,0,0.9); width: 100%;
+    }
+    .fm-search__input::placeholder { color: rgba(0,0,0,0.25); }
+
+    /* List items */
+    .fm-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; cursor: pointer; user-select: none;
+    }
+    .fm-item:hover { background: #F5F5F5; }
+    .fm-item--hidden { display: none !important; }
+    .fm-item__check {
+      width: 18px; height: 18px; flex-shrink: 0;
+      border: 1.5px solid rgba(0,0,0,0.25); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      background: #FFFFFF; transition: background 0.1s, border-color 0.1s;
+    }
+    .fm-item--checked .fm-item__check {
+      background: #3483FA; border-color: #3483FA;
+    }
+    .fm-item__label { font-size: 16px; font-weight: 400; line-height: 20px; color: rgba(0,0,0,0.9); }
+
+    /* Footer */
+    .fm-footer { padding: 16px; }
+    .fm-btn-add {
+      width: 100%; height: 44px;
+      background: rgba(52,131,250,0.15);
+      border: none; border-radius: 6px;
+      font-family: inherit; font-size: 16px; font-weight: 600; line-height: 20px;
+      color: #3483FA; cursor: pointer;
+    }
+    .fm-btn-add:hover:not(:disabled) { background: rgba(52,131,230,0.25); }
+    .fm-btn-add:disabled {
+      background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.25); cursor: not-allowed;
+    }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .footer {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: #FFFFFF; border-top: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0px -1px 2px 0px rgba(0,0,0,0.12);
+      padding: 16px 80px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .btn-link {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 48px; padding: 17px 24px 15px;
+      background: transparent; border: none; border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: 16px; font-weight: 600; line-height: 16px;
+      color: #3483FA; white-space: nowrap;
+    }
+    .btn-link:hover { background: rgba(52,131,250,0.08); }
+    .btn-disabled {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 48px; padding: 17px 24px 15px;
+      background: rgba(0,0,0,0.1); border: none; border-radius: 6px; cursor: not-allowed;
+      font-family: inherit; font-size: 16px; font-weight: 600; line-height: 16px;
+      color: rgba(0,0,0,0.25); white-space: nowrap;
+    }
+    .btn-loud {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 48px; padding: 17px 24px 15px;
+      background: #3483FA; border: none; border-radius: 6px; cursor: pointer;
+      font-family: inherit; font-size: 16px; font-weight: 600; line-height: 16px;
+      color: #FFFFFF; white-space: nowrap;
+    }
+    .btn-loud:hover { background: #2968C8; }
+    .footer__right { display: flex; gap: 8px; }
+
+    /* ── Tab: cursor pointer ─────────────────────────── */
+    .tab { cursor: pointer; }
+
+    /* ── Adaptation tab: hover + delete icon ─────────── */
+    .tab__delete-btn {
+      display: none;
+      background: none; border: none; padding: 0;
+      cursor: pointer; flex-shrink: 0;
+      width: 16px; height: 16px;
+      align-items: center; justify-content: center;
+      border-radius: 3px; opacity: 0.55;
+    }
+    .tab--adaptation:hover .tab__dot { display: none; }
+    .tab--adaptation:hover .tab__delete-btn { display: flex; }
+    .tab__delete-btn:hover { opacity: 1 !important; background: rgba(0,0,0,0.08); }
+    .tab__delete-btn svg { width: 16px; height: 16px; }
+
+    /* ── Tooltip de categoría ────────────────────────── */
+    .tab--category { position: relative; }
+    .tab-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% - 4px);
+      left: 50%; transform: translateX(-50%);
+      background: #FFFFFF; border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 8px 12px;
+      white-space: nowrap; z-index: 50; pointer-events: none;
+      font-size: 14px; font-weight: 400; line-height: 18px;
+      color: rgba(0,0,0,0.9);
+    }
+    .tab-tooltip::after {
+      content: '';
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: #FFFFFF;
+      filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.06));
+    }
+    .tab--category:hover .tab-tooltip { display: block; }
+
+    /* ── Modal dimmer ────────────────────────────────── */
+    .modal-dimmer {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.80);
+      z-index: 400;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-dimmer--hidden { display: none; }
+
+    /* ── Modal box — Andes/Desktop/Small ─────────────── */
+    .modal-box {
+      background: #FFFFFF; border-radius: 6px;
+      box-shadow: 0px 16px 32px 0px rgba(0,0,0,0.20);
+      width: 400px; padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .modal-box__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .modal-box__title { font-size: 20px; font-weight: 600; line-height: 25px; color: rgba(0,0,0,0.9); }
+    .modal-box__close {
+      background: none; border: none; cursor: pointer;
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; color: rgba(0,0,0,0.55); font-size: 18px; line-height: 1;
+    }
+    .modal-box__close:hover { background: rgba(0,0,0,0.07); }
+    .modal-box__body { font-size: 16px; font-weight: 400; line-height: 20px; color: rgba(0,0,0,0.9); }
+    .modal-box__footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; }
+    /* Cancelar — andes-button quiet */
+    .btn-modal-cancel {
+      height: 48px; padding: 0 24px;
+      background: transparent; border: none; border-radius: 6px;
+      font-family: inherit; font-size: 16px; font-weight: 600; color: #3483FA; cursor: pointer;
+    }
+    .btn-modal-cancel:hover { background: rgba(52,131,250,0.08); }
+    /* Eliminar — andes-button loud negative (#F23D4F = andes-red-500) */
+    .btn-modal-confirm {
+      height: 48px; padding: 0 24px;
+      background: #3483FA; border: none; border-radius: 6px;
+      font-family: inherit; font-size: 16px; font-weight: 600; color: #FFFFFF; cursor: pointer;
+    }
+    .btn-modal-confirm:hover { background: #2968C8; }
+
+    /* ── Modal "Enviar prueba" ───────────────────────── */
+    .modal-prueba-dimmer {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.80);
+      z-index: 500;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+    .modal-prueba-dimmer.is-open {
+      opacity: 1; pointer-events: all;
+    }
+    .modal-prueba {
+      background: #FFFFFF; border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      width: 760px; max-width: calc(100vw - 48px);
+      max-height: 648px;
+      padding: 45px 48px 48px;
+      display: flex; flex-direction: column; gap: 24px;
+      overflow: visible;
+      transform: scale(0.97); transition: transform 0.18s ease;
+    }
+    .modal-prueba-dimmer.is-open .modal-prueba { transform: scale(1); }
+    .modal-prueba__header {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    }
+    .modal-prueba__title {
+      font-size: 28px; font-weight: 600; line-height: 35px; color: rgba(0,0,0,0.9);
+    }
+    .modal-prueba__close {
+      background: none; border: none; cursor: pointer;
+      width: 24px; height: 35px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; color: rgba(0,0,0,0.55);
+    }
+    .modal-prueba__close:hover { background: rgba(0,0,0,0.07); }
+    .modal-prueba__close svg { display: block; }
+
+    /* Split textfield */
+    .split-field { position: relative; width: 100%; }
+    .split-input-wrap {
+      display: flex; align-items: center;
+      border: 1px solid rgba(0,0,0,0.25); border-radius: 6px;
+      height: 48px; overflow: hidden;
+    }
+    .split-input-wrap:focus-within {
+      border-color: #3483FA; box-shadow: 0 0 0 1px #3483FA;
+    }
+    .split-dropdown-btn {
+      display: flex; align-items: center; gap: 4px;
+      padding: 0 12px; height: 100%;
+      background: none; border: none; cursor: pointer;
+      font-family: inherit; font-size: 16px; font-weight: 400;
+      color: rgba(0,0,0,0.9); white-space: nowrap; flex-shrink: 0;
+    }
+    .split-dropdown-btn:hover { background: rgba(0,0,0,0.04); }
+    .split-divider { width: 1px; height: 36px; background: rgba(0,0,0,0.25); flex-shrink: 0; }
+    .split-search {
+      flex: 1; height: 100%; padding: 0 12px;
+      border: none; outline: none; background: none;
+      font-family: inherit; font-size: 16px; font-weight: 400; color: rgba(0,0,0,0.9);
+    }
+    .split-search::placeholder { color: rgba(0,0,0,0.55); }
+    .split-helper {
+      padding: 4px 6px 0;
+      font-size: 13px; font-weight: 400; line-height: 18px; color: rgba(0,0,0,0.55);
+    }
+
+    /* ── Andes Floating Menu (países + sugerencias) ───── */
+    .andes-menu {
+      position: absolute; left: 0;
+      background: #FFFFFF; border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      min-width: 200px; max-height: 280px; overflow-y: auto;
+      z-index: 20; display: none;
+      padding: 4px 0;
+    }
+    .andes-menu::-webkit-scrollbar { width: 3px; }
+    .andes-menu::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+    .andes-menu.is-open { display: block; }
+    .andes-menu--paises { top: calc(100% + 4px); }
+    .andes-menu--suggestions {
+      position: absolute;
+      top: calc(48px + 4px); /* altura del split-input-wrap + 4px */
+      left: 0; right: 0;
+      min-width: unset;
+      z-index: 25;
+    }
+    /* Item genérico (menú países) */
+    .andes-menu__item {
+      position: relative;
+      padding: 14px 16px;
+      font-family: inherit; font-size: 16px; font-weight: 400; line-height: 20px;
+      color: rgba(0,0,0,0.9); cursor: pointer;
+    }
+    .andes-menu__item:hover { background: rgba(0,0,0,0.04); }
+    .andes-menu__item--selected { font-weight: 600; color: #3483FA; }
+    .andes-menu__item--selected::before {
+      content: ''; position: absolute;
+      left: 2px; top: 2px; bottom: 2px;
+      width: 2px; background: #3483FA; border-radius: 2px;
+    }
+    /* Item con dos líneas (menú sugerencias) */
+    .andes-menu__item--double {
+      padding: 14px 16px 13px;
+    }
+    .andes-menu__item--double .andes-menu__item-name {
+      font-size: 16px; font-weight: 400; line-height: 20px; color: rgba(0,0,0,0.9);
+    }
+    .andes-menu__item--double .andes-menu__item-sub {
+      font-size: 14px; font-weight: 400; line-height: 18px; color: rgba(0,0,0,0.55);
+      margin-top: 3px;
+    }
+    .andes-menu__empty {
+      padding: 14px 16px;
+      font-family: inherit; font-size: 14px; font-weight: 400;
+      color: rgba(0,0,0,0.45); font-style: italic;
+    }
+
+    /* Lista de destinatarios seleccionados */
+    .recipients-section { display: none; flex-direction: column; gap: 8px; }
+    .recipients-section.is-visible { display: flex; }
+    .recipients-section__title {
+      font-size: 16px; font-weight: 600; line-height: 20px; color: rgba(0,0,0,0.9);
+    }
+    .selected-recipients {
+      display: flex; flex-direction: column; gap: 0;
+      border: 1px solid rgba(0,0,0,0.10); border-radius: 6px;
+      overflow-y: auto; max-height: 220px;
+    }
+    .selected-recipients::-webkit-scrollbar { width: 3px; }
+    .selected-recipients::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+    .recipient-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .recipient-row:last-child { border-bottom: none; }
+    .recipient-row__info { display: flex; flex-direction: column; gap: 2px; }
+    .recipient-row__name {
+      font-size: 16px; font-weight: 400; line-height: 20px; color: rgba(0,0,0,0.9);
+    }
+    .recipient-row__country {
+      font-size: 13px; font-weight: 400; line-height: 18px; color: rgba(0,0,0,0.55);
+    }
+    .recipient-row__remove {
+      background: none; border: none; cursor: pointer;
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px; color: rgba(0,0,0,0.45);
+    }
+    .recipient-row__remove:hover { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.7); }
+
+    /* Botón Enviar — disabled / active */
+    .btn-prueba-enviar {
+      height: 48px; padding: 0 24px;
+      border: none; border-radius: 6px;
+      font-family: inherit; font-size: 16px; font-weight: 600;
+      cursor: not-allowed; transition: background 0.12s;
+      background: rgba(0,0,0,0.07); color: rgba(0,0,0,0.25);
+    }
+    .btn-prueba-enviar.is-active {
+      background: #3483FA; color: #FFFFFF; cursor: pointer;
+    }
+    .btn-prueba-enviar.is-active:hover { background: #2968C8; }
+    .btn-prueba-enviar.is-active:active { background: #1C5CBF; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="#" class="breadcrumb__back">
+          <svg width="5" height="9" viewBox="0 0 5 9" fill="none" aria-hidden="true"><path d="M4 1L1 4.5L4 8" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="breadcrumb__back-text">Volver al Inicio</span>
+        </a>
+        <div class="breadcrumb__divider"></div>
+        <span class="breadcrumb__current">Nueva comunicación</span>
+      </nav>
+
+      <h1 class="page-title">Nombre de la campaña</h1>
+    </div>
+
+    <div class="divider" style="margin-top:8px;"></div>
+
+    <!-- Stepper -->
+    <div class="header-inner">
+      <div class="stepper">
+        <ol class="steps">
+
+          <!-- Step 1: Completed -->
+          <li class="step step--completed">
+            <div class="step__content">
+              <div style="position:relative;width:16px;height:16px;flex-shrink:0;">
+                <div style="position:absolute;inset:0;background:#00A650;border-radius:12px;"></div>
+                <svg preserveAspectRatio="none" width="8.786" height="6.634" overflow="visible" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-47%);" viewBox="0 0 8.78609 6.63369" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.18093 4.57665L7.75758 0L8.78609 1.02852L3.18093 6.63369L0 3.45276L1.02852 2.42424L3.18093 4.57665Z" fill="white"/></svg>
+              </div>
+              <span class="step__label">Información general</span>
+            </div>
+          </li>
+          <li class="step__chevron"><svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L4 4.5L1 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+
+          <!-- Step 2: Completed -->
+          <li class="step step--completed">
+            <div class="step__content">
+              <div style="position:relative;width:16px;height:16px;flex-shrink:0;">
+                <div style="position:absolute;inset:0;background:#00A650;border-radius:12px;"></div>
+                <svg preserveAspectRatio="none" width="8.786" height="6.634" overflow="visible" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-47%);" viewBox="0 0 8.78609 6.63369" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.18093 4.57665L7.75758 0L8.78609 1.02852L3.18093 6.63369L0 3.45276L1.02852 2.42424L3.18093 4.57665Z" fill="white"/></svg>
+              </div>
+              <span class="step__label">Audiencia</span>
+            </div>
+          </li>
+          <li class="step__chevron"><svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L4 4.5L1 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+
+          <!-- Step 3: Completed -->
+          <li class="step step--completed">
+            <div class="step__content">
+              <div style="position:relative;width:16px;height:16px;flex-shrink:0;">
+                <div style="position:absolute;inset:0;background:#00A650;border-radius:12px;"></div>
+                <svg preserveAspectRatio="none" width="8.786" height="6.634" overflow="visible" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-47%);" viewBox="0 0 8.78609 6.63369" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.18093 4.57665L7.75758 0L8.78609 1.02852L3.18093 6.63369L0 3.45276L1.02852 2.42424L3.18093 4.57665Z" fill="white"/></svg>
+              </div>
+              <span class="step__label">Canal</span>
+            </div>
+          </li>
+          <li class="step__chevron"><svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L4 4.5L1 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+
+          <!-- Step 4: Active -->
+          <li class="step step--active">
+            <div class="step__content">
+              <div class="step__pill">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="#3483FA"/></svg>
+                <span class="step__pill-number step__pill-number--active">4</span>
+              </div>
+              <span class="step__label">Contenido</span>
+            </div>
+            <div class="step__bar"></div>
+          </li>
+          <li class="step__chevron"><svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L4 4.5L1 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+
+          <!-- Step 5: Pending -->
+          <li class="step step--pending">
+            <div class="step__content">
+              <div class="step__pill">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="black" fill-opacity="0.1"/></svg>
+                <span class="step__pill-number step__pill-number--pending">5</span>
+              </div>
+              <span class="step__label">Envio</span>
+            </div>
+          </li>
+          <li class="step__chevron"><svg width="4.943" height="8.295" viewBox="0 0 5 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1 1L4 4.5L1 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+
+          <!-- Step 6: Pending -->
+          <li class="step step--pending">
+            <div class="step__content">
+              <div class="step__pill">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="black" fill-opacity="0.1"/></svg>
+                <span class="step__pill-number step__pill-number--pending">6</span>
+              </div>
+              <span class="step__label">Revisión</span>
+            </div>
+          </li>
+
+        </ol>
+
+        <!-- Guía de ayuda -->
+        <a href="#" class="stepper__help">
+          <div class="stepper__help-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="9" stroke="#3483FA" stroke-width="1.5"/>
+              <path d="M7.5 7.5C7.5 6.12 8.62 5 10 5C11.38 5 12.5 6.12 12.5 7.5C12.5 8.88 10 10 10 10V11.5" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="10" cy="14" r="0.75" fill="#3483FA"/>
+            </svg>
+          </div>
+          <span class="stepper__help-label">Guía de ayuda</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="card">
+
+      <!-- Tabs + Tooltip -->
+      <div style="position:relative;overflow:visible;">
+        <div class="tabs-row">
+          <div class="tabs">
+            <div class="tab tab--active tab--category" id="tab-neutro">
+              <div class="tab__inner">
+                <span class="tab__label">ES. Neutro (3)</span>
+                <div class="tab__dot"></div>
+              </div>
+              <div class="tab__underline"></div>
+              <div class="tab-tooltip" id="tooltip-neutro">Colombia, México y Chile.</div>
+            </div>
+            <div class="tab tab--inactive tab--category" id="tab-voseado">
+              <div class="tab__inner">
+                <span class="tab__label">ES. Voseado (2)</span>
+                <div class="tab__dot"></div>
+              </div>
+              <div class="tab-tooltip" id="tooltip-voseado">Argentina y Uruguay.</div>
+            </div>
+            <div class="tab tab--inactive" id="tab-brasil">
+              <div class="tab__inner">
+                <span class="tab__label">PT. Brasil</span>
+                <div class="tab__dot"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="adaptation-wrap">
+            <button class="btn-adaptation" id="btn-adaptation" onclick="toggleAdaptationMenu(event)">
+              <svg width="9.699" height="9.7" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 1V9M1 5H9" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span class="btn-adaptation__text">Adaptación</span>
+            </button>
+
+            <!-- Floating menu -->
+            <div class="floating-menu" id="floating-menu">
+
+              <!-- Searchbox -->
+              <div class="fm-search">
+                <div class="fm-search__inner">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="4.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+                    <path d="M10.5 10.5L13.5 13.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <input class="fm-search__input" id="fm-search-input" type="search" placeholder="Search"
+                    oninput="filterCountries(this.value)">
+                </div>
+              </div>
+
+              <!-- Countries list -->
+              <div id="fm-list">
+                <div class="fm-item" onclick="toggleCountry(this)" data-country="Colombia">
+                  <div class="fm-item__check"></div>
+                  <span class="fm-item__label">Colombia</span>
+                </div>
+                <div class="fm-item" onclick="toggleCountry(this)" data-country="México">
+                  <div class="fm-item__check"></div>
+                  <span class="fm-item__label">México</span>
+                </div>
+                <div class="fm-item" onclick="toggleCountry(this)" data-country="Chile">
+                  <div class="fm-item__check"></div>
+                  <span class="fm-item__label">Chile</span>
+                </div>
+                <div class="fm-item" onclick="toggleCountry(this)" data-country="Uruguay">
+                  <div class="fm-item__check"></div>
+                  <span class="fm-item__label">Uruguay</span>
+                </div>
+                <div class="fm-item" onclick="toggleCountry(this)" data-country="Argentina">
+                  <div class="fm-item__check"></div>
+                  <span class="fm-item__label">Argentina</span>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="fm-footer">
+                <button class="fm-btn-add" id="fm-btn-add" disabled onclick="addAdaptation()">
+                  Agregar adaptación
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Form body -->
+      <div class="form-body">
+
+        <!-- Left -->
+        <div class="form-left">
+          <!-- Campos ES. Neutro -->
+          <div class="email-fields" id="fields-neutro">
+            <div class="textfield">
+              <label class="textfield__label" for="asunto-neutro">Asunto</label>
+              <input class="textfield__input" id="asunto-neutro" type="text"
+                value="Mañana vence tu estado de cuenta: págalo hoy"
+                oninput="document.getElementById('preview-subject').textContent = this.value || 'Asunto'">
+              <p class="textfield__helper">Recomendamos no usar más de 40 caracteres y tampoco más de un emoji.</p>
+            </div>
+            <div class="textfield">
+              <label class="textfield__label" for="vprevia-neutro">Texto de vista previa</label>
+              <input class="textfield__input" id="vprevia-neutro" type="text"
+                value="Evitá recargos: pagalo en minutos desde la app."
+                oninput="document.getElementById('preview-preheader').textContent = this.value || 'Texto de vista previa'">
+              <p class="textfield__helper">Recomendamos mantenerlo entre 50 y 70 caracteres.</p>
+            </div>
+          </div>
+
+          <!-- Campos ES. Voseado -->
+          <div class="email-fields" id="fields-voseado" style="display:none">
+            <div class="textfield">
+              <label class="textfield__label" for="asunto-voseado">Asunto</label>
+              <input class="textfield__input" id="asunto-voseado" type="text"
+                value="Pagaste a tiempo tu estado de cuenta"
+                oninput="document.getElementById('preview-subject-orange').textContent = this.value || 'Asunto'">
+              <p class="textfield__helper">Recomendamos no usar más de 40 caracteres y tampoco más de un emoji.</p>
+            </div>
+            <div class="textfield">
+              <label class="textfield__label" for="vprevia-voseado">Texto de vista previa</label>
+              <input class="textfield__input" id="vprevia-voseado" type="text"
+                value="Gracias por pagar a tiempo. Tu cuenta ya quedó al día."
+                oninput="document.getElementById('preview-preheader-orange').textContent = this.value || 'Texto de vista previa'">
+              <p class="textfield__helper">Recomendamos mantenerlo entre 50 y 70 caracteres.</p>
+            </div>
+          </div>
+
+          <!-- Campos PT. Brasil -->
+          <div class="email-fields" id="fields-brasil" style="display:none">
+            <div class="textfield">
+              <label class="textfield__label" for="asunto-brasil">Asunto</label>
+              <input class="textfield__input" id="asunto-brasil" type="text"
+                value="Você pagou o extrato da sua conta em dia"
+                oninput="document.getElementById('preview-subject-orange').textContent = this.value || 'Asunto'">
+              <p class="textfield__helper">Recomendamos no usar más de 40 caracteres y tampoco más de un emoji.</p>
+            </div>
+            <div class="textfield">
+              <label class="textfield__label" for="vprevia-brasil">Texto de vista previa</label>
+              <input class="textfield__input" id="vprevia-brasil" type="text"
+                value="Obrigado por pagar em dia. Sua conta agora está atualizada."
+                oninput="document.getElementById('preview-preheader-orange').textContent = this.value || 'Texto de vista previa'">
+              <p class="textfield__helper">Recomendamos mantenerlo entre 50 y 70 caracteres.</p>
+            </div>
+          </div>
+
+          <!-- Campos otras tabs de adaptación -->
+          <div class="email-fields" id="fields-orange" style="display:none">
+            <div class="textfield">
+              <label class="textfield__label" for="asunto-orange">Asunto</label>
+              <input class="textfield__input" id="asunto-orange" type="text"
+                placeholder=""
+                oninput="document.getElementById('preview-subject-orange').textContent = this.value || 'Asunto'">
+              <p class="textfield__helper">Recomendamos no usar más de 40 caracteres y tampoco más de un emoji.</p>
+            </div>
+            <div class="textfield">
+              <label class="textfield__label" for="vprevia-orange">Texto de vista previa</label>
+              <input class="textfield__input" id="vprevia-orange" type="text"
+                placeholder=""
+                oninput="document.getElementById('preview-preheader-orange').textContent = this.value || 'Texto de vista previa'">
+              <p class="textfield__helper">Recomendamos mantenerlo entre 50 y 70 caracteres.</p>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Editar + Eliminar — solo ES. Neutro (tab verde) -->
+          <div class="btn-actions-wrap" id="btn-actions-neutro">
+            <button class="btn-quiet" onclick="window.location.href='email-builder.html'">
+              <span class="btn-quiet__text">Editar plantilla</span>
+            </button>
+            <button class="btn-transparent">
+              <span class="btn-transparent__text">Eliminar plantilla</span>
+            </button>
+          </div>
+
+          <!-- Editar + Eliminar — tabs no-neutro -->
+          <div class="btn-actions-wrap" id="btn-actions-orange">
+            <button class="btn-quiet" onclick="window.location.href='email-builder-Voseado.html'">
+              <span class="btn-quiet__text">Editar plantilla</span>
+            </button>
+            <button class="btn-transparent">
+              <span class="btn-transparent__text">Eliminar plantilla</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Vista previa -->
+        <div class="preview-panel">
+          <p class="preview-panel__label">Vista previa</p>
+
+          <!-- Device ES. Neutro (tab verde) — Skeleton mail.jpg -->
+          <div class="device" id="device-neutro">
+            <div class="device__home-bar"></div>
+            <div class="device__statusbar">
+              <span class="device__time">12:57</span>
+              <div class="device__icons">
+                <!-- signal -->
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="0" y="6" width="2" height="6" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="3" y="4" width="2" height="8" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="6" y="2" width="2" height="10" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="9" y="0" width="2" height="12" rx="0.5" fill="rgba(0,0,0,0.25)"/></svg>
+                <!-- wifi -->
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1 4C3.21 2.08 8.79 2.08 11 4" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><path d="M2.8 6C4.35 4.9 7.65 4.9 9.2 6" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><path d="M4.6 8C5.15 7.6 6.85 7.6 7.4 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="10.5" r="0.8" fill="rgba(0,0,0,0.25)"/></svg>
+                <!-- battery -->
+                <svg width="22" height="12" viewBox="0 0 22 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="18" height="11" rx="2.5" stroke="rgba(0,0,0,0.25)"/><rect x="2" y="2" width="14" height="8" rx="1.5" fill="rgba(0,0,0,0.25)"/><path d="M19.5 4v4a2 2 0 000-4z" fill="rgba(0,0,0,0.25)"/></svg>
+                <span class="device__battery-text">100%</span>
+              </div>
+            </div>
+            <div class="email-card">
+              <div class="email-header">
+                <p class="email-sender">Mercado Libre &lt;Transaccional@mercadolibre.com&gt;</p>
+                <div class="email-hr"></div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <p class="email-subject" id="preview-subject">Asunto</p>
+                  <p class="email-preheader" id="preview-preheader">Texto de vista previa</p>
+                </div>
+              </div>
+              <div class="email-preview">
+                <img src="Skeleton mail.jpg" alt="Email preview" class="ep-img">
+              </div>
+            </div>
+          </div>
+
+          <!-- Device tabs naranja (ES. Voseado, PT. Brasil, ES. Colombia…) — skeleton gris -->
+          <div class="device" id="device-orange" style="display:none">
+            <div class="device__home-bar"></div>
+            <div class="device__statusbar">
+              <span class="device__time">12:57</span>
+              <div class="device__icons">
+                <!-- signal -->
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="0" y="6" width="2" height="6" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="3" y="4" width="2" height="8" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="6" y="2" width="2" height="10" rx="0.5" fill="rgba(0,0,0,0.25)"/><rect x="9" y="0" width="2" height="12" rx="0.5" fill="rgba(0,0,0,0.25)"/></svg>
+                <!-- wifi -->
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1 4C3.21 2.08 8.79 2.08 11 4" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><path d="M2.8 6C4.35 4.9 7.65 4.9 9.2 6" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><path d="M4.6 8C5.15 7.6 6.85 7.6 7.4 8" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" stroke-linecap="round"/><circle cx="6" cy="10.5" r="0.8" fill="rgba(0,0,0,0.25)"/></svg>
+                <!-- battery -->
+                <svg width="22" height="12" viewBox="0 0 22 12" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="18" height="11" rx="2.5" stroke="rgba(0,0,0,0.25)"/><rect x="2" y="2" width="14" height="8" rx="1.5" fill="rgba(0,0,0,0.25)"/><path d="M19.5 4v4a2 2 0 000-4z" fill="rgba(0,0,0,0.25)"/></svg>
+                <span class="device__battery-text">100%</span>
+              </div>
+            </div>
+            <div class="email-card">
+              <div class="email-header">
+                <p class="email-sender">Mercado Libre &lt;Transaccional@mercadolibre.com&gt;</p>
+                <div class="email-hr"></div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <p class="email-subject" id="preview-subject-orange">Asunto</p>
+                  <p class="email-preheader" id="preview-preheader-orange">Texto de vista previa</p>
+                </div>
+              </div>
+              <div class="email-preview">
+                <img src="Skeletonmail2.jpg" alt="Email preview" class="ep-img">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <button class="btn-link">Volver al paso anterior</button>
+    <div class="footer__right">
+      <button class="btn-link" onclick="openPruebaModal()">Enviar prueba</button>
+      <button class="btn-loud">Guardar y continuar</button>
+    </div>
+  </footer>
+
+  <!-- Snackbar: plantilla definida -->
+  <div class="snackbar" id="snackbar" aria-live="polite">
+    <span class="snackbar__text">Definiste la plantilla correctamente.</span>
+  </div>
+
+  <!-- Modal: confirmar eliminación de adaptación -->
+  <div class="modal-dimmer modal-dimmer--hidden" id="modal-dimmer" onclick="closeModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-box__header">
+        <h2 class="modal-box__title">¿Eliminar esta adaptación?</h2>
+        <button class="modal-box__close" onclick="closeModal()" aria-label="Cerrar">&#x2715;</button>
+      </div>
+      <p class="modal-box__body" id="modal-body-text"></p>
+      <div class="modal-box__footer">
+        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-modal-confirm" id="btn-modal-confirm">Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Snackbar ────────────────────────────────────────
+    var _snackbarTimer = null;
+    function showSnackbar() {
+      var sb = document.getElementById('snackbar');
+      sb.classList.add('is-visible');
+      clearTimeout(_snackbarTimer);
+      _snackbarTimer = setTimeout(function() {
+        sb.classList.remove('is-visible');
+      }, 3500);
+    }
+
+    // ── Constantes ─────────────────────────────────────
+    var CHECKMARK_SVG = '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var DELETE_SVG = '<svg width="16" height="16" viewBox="0 0 12 13" fill="none"><path d="M1 3h10M4 3V2a1 1 0 011-1h2a1 1 0 011 1v1M2 3l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9L10 3M4.5 5.5v4M7.5 5.5v4" stroke="rgba(0,0,0,0.55)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var VOSEADO = ['Argentina', 'Uruguay'];
+    var neutroCountries = ['Colombia', 'México', 'Chile'];
+    var voseadoCountries = ['Argentina', 'Uruguay'];
+    var _pendingTab = null;
+    var _pendingCountry = null;
+
+    // ── Tab navigation ──────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(function (t) {
+        t.classList.remove('tab--active');
+        t.classList.add('tab--inactive');
+        var u = t.querySelector('.tab__underline');
+        if (u) u.remove();
+      });
+      tab.classList.remove('tab--inactive');
+      tab.classList.add('tab--active');
+      var underline = document.createElement('div');
+      underline.className = 'tab__underline';
+      tab.appendChild(underline);
+
+      // Swap device, botones y campos según tab
+      var isNeutro   = tab.id === 'tab-neutro';
+      var isVoseado  = tab.id === 'tab-voseado';
+      var isBrasil   = tab.id === 'tab-brasil';
+
+      document.getElementById('device-neutro').style.display  = isNeutro ? '' : 'none';
+      document.getElementById('device-orange').style.display  = isNeutro ? 'none' : '';
+      document.getElementById('btn-actions-neutro').style.display = isNeutro ? '' : 'none';
+
+      document.getElementById('fields-neutro').style.display  = isNeutro  ? '' : 'none';
+      document.getElementById('fields-voseado').style.display = isVoseado ? '' : 'none';
+      document.getElementById('fields-brasil').style.display  = isBrasil  ? '' : 'none';
+      document.getElementById('fields-orange').style.display  = (!isNeutro && !isVoseado && !isBrasil) ? '' : 'none';
+
+      // Sincronizar preview del device naranja con los valores del field set activo
+      if (!isNeutro) {
+        var fieldsId = isVoseado ? 'fields-voseado' : isBrasil ? 'fields-brasil' : 'fields-orange';
+        var inputs = document.getElementById(fieldsId).querySelectorAll('input');
+        document.getElementById('preview-subject-orange').textContent  = inputs[0].value || 'Asunto';
+        document.getElementById('preview-preheader-orange').textContent = inputs[1].value || 'Texto de vista previa';
+      }
+
+      var btnOrange = document.getElementById('btn-actions-orange');
+      if (isNeutro) { btnOrange.classList.remove('is-visible'); }
+      else          { btnOrange.classList.add('is-visible'); }
+    }
+
+    // Bind tabs estáticos al cargar + snackbar de bienvenida
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.tab').forEach(function (tab) {
+        tab.addEventListener('click', function (e) {
+          if (!e.target.closest('.tab__delete-btn')) switchTab(tab);
+        });
+      });
+      // Pre-cargar preview de ES. Neutro (tab activa por defecto)
+      var neutroInputs = document.getElementById('fields-neutro').querySelectorAll('input');
+      document.getElementById('preview-subject').textContent  = neutroInputs[0].value || 'Asunto';
+      document.getElementById('preview-preheader').textContent = neutroInputs[1].value || 'Texto de vista previa';
+      showSnackbar();
+    });
+
+    // ── Floating menu ───────────────────────────────────
+    function toggleAdaptationMenu(e) {
+      e.stopPropagation();
+      document.getElementById('floating-menu').classList.toggle('is-open');
+    }
+
+    document.addEventListener('click', function (e) {
+      var menu = document.getElementById('floating-menu');
+      var wrap = document.querySelector('.adaptation-wrap');
+      if (menu.classList.contains('is-open') && !wrap.contains(e.target)) {
+        menu.classList.remove('is-open');
+      }
+    });
+
+    function toggleCountry(item) {
+      if (item.dataset.existing) return; // bloqueado: ya existe como tab
+      var isChecked = item.classList.toggle('fm-item--checked');
+      item.querySelector('.fm-item__check').innerHTML = isChecked ? CHECKMARK_SVG : '';
+      updateAddBtn();
+    }
+
+    function updateAddBtn() {
+      var n = document.querySelectorAll('#fm-list .fm-item:not([data-existing]).fm-item--checked').length;
+      document.getElementById('fm-btn-add').disabled = n === 0;
+    }
+
+    function filterCountries(query) {
+      document.querySelectorAll('#fm-list .fm-item').forEach(function (item) {
+        var label = item.querySelector('.fm-item__label').textContent.toLowerCase();
+        item.classList.toggle('fm-item--hidden', query.length > 0 && !label.includes(query.toLowerCase()));
+      });
+    }
+
+    // ── Agregar adaptación ──────────────────────────────
+    function addAdaptation() {
+      var tabs = document.querySelector('.tabs');
+      var newItems = document.querySelectorAll('#fm-list .fm-item:not([data-existing]).fm-item--checked');
+
+      newItems.forEach(function (item) {
+        var country = item.getAttribute('data-country');
+
+        var tab = document.createElement('div');
+        tab.className = 'tab tab--inactive tab--adaptation';
+        tab.dataset.country = country;
+
+        var inner = document.createElement('div');
+        inner.className = 'tab__inner';
+
+        var label = document.createElement('span');
+        label.className = 'tab__label';
+        label.textContent = country;
+
+        var dot = document.createElement('div');
+        dot.className = 'tab__dot';
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.className = 'tab__delete-btn';
+        deleteBtn.setAttribute('aria-label', 'Eliminar ' + country);
+        deleteBtn.innerHTML = DELETE_SVG;
+        deleteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openDeleteModal(country, tab);
+        });
+
+        inner.appendChild(label);
+        inner.appendChild(dot);
+        inner.appendChild(deleteBtn);
+        tab.appendChild(inner);
+
+        tab.addEventListener('click', function (e) {
+          if (!e.target.closest('.tab__delete-btn')) switchTab(tab);
+        });
+
+        tabs.appendChild(tab);
+
+        // Reducir contador del grupo y actualizar lista
+        var groupName = VOSEADO.includes(country) ? 'Voseado' : 'Neutro';
+        updateGroupCounter(groupName, -1);
+        if (VOSEADO.includes(country)) {
+          voseadoCountries = voseadoCountries.filter(function(c) { return c !== country; });
+        } else {
+          neutroCountries = neutroCountries.filter(function(c) { return c !== country; });
+        }
+
+        item.setAttribute('data-existing', 'true');
+      });
+
+      document.getElementById('floating-menu').classList.remove('is-open');
+      document.getElementById('fm-search-input').value = '';
+      filterCountries('');
+      updateAddBtn();
+      updateTooltips();
+    }
+
+    function formatCountryList(countries) {
+      if (countries.length === 0) return 'Sin países agrupados.';
+      if (countries.length === 1) return countries[0] + '.';
+      return countries.slice(0, -1).join(', ') + ' y ' + countries[countries.length - 1] + '.';
+    }
+
+    function updateTooltips() {
+      var tn = document.getElementById('tooltip-neutro');
+      var tv = document.getElementById('tooltip-voseado');
+      if (tn) tn.textContent = formatCountryList(neutroCountries);
+      if (tv) tv.textContent = formatCountryList(voseadoCountries);
+    }
+
+    function updateGroupCounter(groupName, delta) {
+      document.querySelectorAll('.tab .tab__label').forEach(function (label) {
+        if (label.textContent.includes(groupName)) {
+          var match = label.textContent.match(/\((\d+)\)/);
+          if (match) {
+            var newCount = Math.max(0, parseInt(match[1]) + delta);
+            label.textContent = label.textContent.replace(/\(\d+\)/, '(' + newCount + ')');
+          }
+        }
+      });
+    }
+
+    // ── Modal eliminar adaptación ───────────────────────
+    function openDeleteModal(country, tab) {
+      _pendingTab = tab;
+      _pendingCountry = country;
+      document.getElementById('modal-body-text').innerHTML =
+        'Esta acción no se puede deshacer. Perderás toda la información guardada en esta adaptación.';
+      document.getElementById('btn-modal-confirm').onclick = confirmDelete;
+      document.getElementById('modal-dimmer').classList.remove('modal-dimmer--hidden');
+    }
+
+    function confirmDelete() {
+      if (!_pendingTab) return;
+      var groupName = VOSEADO.includes(_pendingCountry) ? 'Voseado' : 'Neutro';
+      updateGroupCounter(groupName, 1);
+      if (VOSEADO.includes(_pendingCountry)) {
+        voseadoCountries.push(_pendingCountry);
+      } else {
+        neutroCountries.push(_pendingCountry);
+      }
+      var menuItem = document.querySelector('#fm-list .fm-item[data-country="' + _pendingCountry + '"]');
+      if (menuItem) {
+        menuItem.classList.remove('fm-item--checked');
+        menuItem.querySelector('.fm-item__check').innerHTML = '';
+        menuItem.removeAttribute('data-existing');
+      }
+      _pendingTab.remove();
+      _pendingTab = null;
+      _pendingCountry = null;
+      closeModal();
+      updateAddBtn();
+      updateTooltips();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-dimmer').classList.add('modal-dimmer--hidden');
+      _pendingTab = null;
+      _pendingCountry = null;
+    }
+  </script>
+
+  <!-- Modal: Enviar prueba ──────────────────────────── -->
+  <div class="modal-prueba-dimmer" id="modal-prueba-dimmer" onclick="handlePruebaOutsideClick(event)">
+    <div class="modal-prueba" role="dialog" aria-modal="true" aria-labelledby="modal-prueba-title">
+
+      <!-- Header -->
+      <div class="modal-prueba__header">
+        <h2 class="modal-prueba__title" id="modal-prueba-title">Elige los destinatarios de la prueba</h2>
+        <button class="modal-prueba__close" onclick="closePruebaModal()" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M12 4L4 12M4 4l8 8" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Split textfield -->
+      <div class="split-field">
+        <div class="split-input-wrap">
+          <button class="split-dropdown-btn" id="split-dropdown-btn" onclick="togglePaisesDropdown(event)" type="button">
+            <span id="split-dropdown-label">Todos los países</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M2 4l4 4 4-4" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="split-divider"></div>
+          <input
+            class="split-search"
+            id="split-search-input"
+            type="text"
+            placeholder="Buscar por nombre o Cust ID"
+            oninput="handlePruebaInput(this.value)"
+            autocomplete="off">
+        </div>
+        <!-- Andes Floating Menu — Sugerencias (flotante, debajo del input) -->
+        <div class="andes-menu andes-menu--suggestions" id="suggestions-list"></div>
+
+        <!-- Andes Floating Menu — Países -->
+        <div class="andes-menu andes-menu--paises" id="split-dropdown-list">
+          <div class="andes-menu__item andes-menu__item--selected" onclick="selectPais(this, 'Todos los países')">Todos los países</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'Colombia')">Colombia</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'México')">México</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'Chile')">Chile</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'Uruguay')">Uruguay</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'Argentina')">Argentina</div>
+          <div class="andes-menu__item" onclick="selectPais(this, 'Brasil')">Brasil</div>
+        </div>
+
+        <p class="split-helper">Cada persona recibirá el contenido de su país.</p>
+
+        <!-- Sección destinatarios seleccionados -->
+        <div class="recipients-section" id="recipients-section" style="padding-top: 24px;">
+          <span class="recipients-section__title">Destinatarios</span>
+          <div class="selected-recipients" id="selected-recipients"></div>
+        </div>
+      </div>
+
+      <!-- Botón Enviar -->
+      <div>
+        <button class="btn-prueba-enviar" id="btn-prueba-enviar" onclick="submitPrueba()" disabled>Enviar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── Dataset de destinatarios (mock) ─────────────────
+    var DESTINATARIOS = [
+      { name: 'Alejandro Gómez',   country: 'Colombia' },
+      { name: 'Agustina Martínez', country: 'Argentina' },
+      { name: 'Andrea López',      country: 'México' },
+      { name: 'Andrés Pérez',      country: 'Chile' },
+      { name: 'Ana García',        country: 'Uruguay' },
+      { name: 'Bruno Silva',       country: 'Brasil' },
+      { name: 'Beatriz Ramírez',   country: 'Colombia' },
+      { name: 'Camila Torres',     country: 'Argentina' },
+      { name: 'Carlos Fernández',  country: 'México' },
+      { name: 'Catalina Ruiz',     country: 'Chile' },
+      { name: 'Diego Rodríguez',   country: 'Uruguay' },
+      { name: 'Daniela Sánchez',   country: 'Brasil' },
+      { name: 'Elena Vargas',      country: 'Colombia' },
+      { name: 'Emilio Herrera',    country: 'Argentina' },
+      { name: 'Fabiana Castro',    country: 'México' },
+      { name: 'Felipe Morales',    country: 'Chile' },
+      { name: 'Gabriela Romero',   country: 'Uruguay' },
+      { name: 'Gonzalo Navarro',   country: 'Brasil' },
+      { name: 'Hernán Ríos',       country: 'Colombia' },
+      { name: 'Helena Medina',     country: 'Argentina' },
+      { name: 'Ignacio Salazar',   country: 'México' },
+      { name: 'Isabel Reyes',      country: 'Chile' },
+      { name: 'Juan Díaz',         country: 'Colombia' },
+      { name: 'Juliana Mendoza',   country: 'Argentina' },
+      { name: 'José Paredes',      country: 'Uruguay' },
+      { name: 'Karen Vega',        country: 'Brasil' },
+      { name: 'Kevin Blanco',      country: 'México' },
+      { name: 'Laura Gutiérrez',   country: 'Colombia' },
+      { name: 'Luis Jiménez',      country: 'Chile' },
+      { name: 'Marcela Aguilar',   country: 'Argentina' },
+      { name: 'Matías Molina',     country: 'Uruguay' },
+      { name: 'Manuel Ortega',     country: 'Brasil' },
+      { name: 'Natalia Soto',      country: 'México' },
+      { name: 'Nicolás Fuentes',   country: 'Colombia' },
+      { name: 'Oscar Delgado',     country: 'Chile' },
+      { name: 'Olivia Cabrera',    country: 'Argentina' },
+      { name: 'Paola Espinoza',    country: 'Uruguay' },
+      { name: 'Pablo Guerrero',    country: 'Brasil' },
+      { name: 'Rafael Suárez',     country: 'México' },
+      { name: 'Rebeca Lozano',     country: 'Colombia' },
+      { name: 'Sebastián Peña',    country: 'Argentina' },
+      { name: 'Sofía Alvarado',    country: 'Chile' },
+      { name: 'Sandra Ibáñez',     country: 'Uruguay' },
+      { name: 'Tomás Vera',        country: 'Brasil' },
+      { name: 'Trinidad Campos',   country: 'México' },
+      { name: 'Valentina Cortés',  country: 'Colombia' },
+      { name: 'Víctor Pacheco',    country: 'Argentina' },
+      { name: 'Ximena Flores',     country: 'Chile' },
+      { name: 'Yasmin Acosta',     country: 'Uruguay' },
+      { name: 'Zoe Pizarro',       country: 'Brasil' },
+    ];
+    var _selectedRecipients = [];
+
+    // ── Modal Enviar prueba ──────────────────────────────
+    function openPruebaModal() {
+      var dimmer = document.getElementById('modal-prueba-dimmer');
+      dimmer.classList.add('is-open');
+      document.getElementById('split-search-input').value = '';
+      _selectedRecipients = [];
+      renderRecipients();
+      document.getElementById('recipients-section').classList.remove('is-visible');
+      updateEnviarBtn();
+      closeSuggestionsMenu();
+      setTimeout(function() { document.getElementById('split-search-input').focus(); }, 180);
+      document.addEventListener('keydown', handlePruebaEscape);
+    }
+
+    function closePruebaModal() {
+      document.getElementById('modal-prueba-dimmer').classList.remove('is-open');
+      document.getElementById('split-dropdown-list').classList.remove('is-open');
+      closeSuggestionsMenu();
+      document.removeEventListener('keydown', handlePruebaEscape);
+    }
+
+    function handlePruebaOutsideClick(e) {
+      if (e.target === document.getElementById('modal-prueba-dimmer')) closePruebaModal();
+    }
+
+    function handlePruebaEscape(e) {
+      if (e.key === 'Escape') closePruebaModal();
+    }
+
+    // ── Input: muestra sugerencias ───────────────────────
+    function handlePruebaInput(value) {
+      var trimmed = value.trim();
+      if (trimmed.length > 0) {
+        showSuggestions(trimmed);
+      } else {
+        closeSuggestionsMenu();
+      }
+    }
+
+    function updateEnviarBtn() {
+      var btn = document.getElementById('btn-prueba-enviar');
+      var hasRecipients = _selectedRecipients.length > 0;
+      btn.classList.toggle('is-active', hasRecipients);
+      btn.disabled = !hasRecipients;
+    }
+
+    function showSuggestions(query) {
+      var q = query.toLowerCase();
+      var alreadySelected = _selectedRecipients.map(function(r) { return r.name; });
+      var matches = DESTINATARIOS.filter(function(d) {
+        return d.name.toLowerCase().startsWith(q[0]) && alreadySelected.indexOf(d.name) === -1;
+      });
+      var list = document.getElementById('suggestions-list');
+      list.innerHTML = '';
+
+      if (matches.length === 0) {
+        list.innerHTML = '<div class="andes-menu__empty">Sin resultados</div>';
+      } else {
+        matches.forEach(function(d) {
+          var item = document.createElement('div');
+          item.className = 'andes-menu__item andes-menu__item--double';
+          // Nombre con inicial en negrita
+          var nameHtml = '<strong>' + d.name.slice(0, query.length) + '</strong>' + d.name.slice(query.length);
+          item.innerHTML =
+            '<div class="andes-menu__item-name">' + nameHtml + '</div>' +
+            '<div class="andes-menu__item-sub">' + d.country + '</div>';
+          item.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            selectSuggestion(d);
+          });
+          list.appendChild(item);
+        });
+      }
+      list.classList.add('is-open');
+    }
+
+    function closeSuggestionsMenu() {
+      var list = document.getElementById('suggestions-list');
+      if (list) { list.classList.remove('is-open'); list.innerHTML = ''; }
+    }
+
+    function selectSuggestion(destinatario) {
+      _selectedRecipients.push(destinatario);
+      renderRecipients();
+      updateEnviarBtn();
+      document.getElementById('split-search-input').value = '';
+      closeSuggestionsMenu();
+      document.getElementById('split-search-input').focus();
+    }
+
+    function removeRecipient(name) {
+      _selectedRecipients = _selectedRecipients.filter(function(r) { return r.name !== name; });
+      renderRecipients();
+      updateEnviarBtn();
+    }
+
+    function renderRecipients() {
+      var container = document.getElementById('selected-recipients');
+      var section = document.getElementById('recipients-section');
+      container.innerHTML = '';
+      section.classList.toggle('is-visible', _selectedRecipients.length > 0);
+      _selectedRecipients.forEach(function(r) {
+        var row = document.createElement('div');
+        row.className = 'recipient-row';
+        row.innerHTML =
+          '<div class="recipient-row__info">' +
+            '<span class="recipient-row__name">' + r.name + '</span>' +
+            '<span class="recipient-row__country">' + r.country + '</span>' +
+          '</div>' +
+          '<button class="recipient-row__remove" aria-label="Quitar ' + r.name + '">' +
+            '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">' +
+              '<path d="M11 3L3 11M3 3l8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>' +
+            '</svg>' +
+          '</button>';
+        row.querySelector('.recipient-row__remove').addEventListener('click', function() {
+          removeRecipient(r.name);
+        });
+        container.appendChild(row);
+      });
+    }
+
+    // ── Dropdown países ──────────────────────────────────
+    function togglePaisesDropdown(e) {
+      e.stopPropagation();
+      closeSuggestionsMenu();
+      document.getElementById('split-dropdown-list').classList.toggle('is-open');
+    }
+
+    function selectPais(el, pais) {
+      document.getElementById('split-dropdown-label').textContent = pais;
+      document.querySelectorAll('#split-dropdown-list .andes-menu__item').forEach(function(i) {
+        i.classList.remove('andes-menu__item--selected');
+      });
+      el.classList.add('andes-menu__item--selected');
+      document.getElementById('split-dropdown-list').classList.remove('is-open');
+      document.getElementById('split-search-input').focus();
+    }
+
+    function submitPrueba() {
+      if (document.getElementById('btn-prueba-enviar').disabled) return;
+      closePruebaModal();
+      showSnackbarMsg('Prueba enviada correctamente.');
+    }
+
+    // Cierra menus al hacer click fuera
+    document.addEventListener('click', function(e) {
+      var paisList = document.getElementById('split-dropdown-list');
+      var sugList  = document.getElementById('suggestions-list');
+      var splitField = document.querySelector('.split-field');
+      if (!splitField || !splitField.contains(e.target)) {
+        if (paisList) paisList.classList.remove('is-open');
+        closeSuggestionsMenu();
+      } else if (!document.getElementById('split-dropdown-btn').contains(e.target)) {
+        if (paisList) paisList.classList.remove('is-open');
+      }
+    });
+
+    function showSnackbarMsg(msg) {
+      var sb = document.getElementById('snackbar');
+      sb.querySelector('.snackbar__text').textContent = msg;
+      sb.classList.add('is-visible');
+      clearTimeout(_snackbarTimer);
+      _snackbarTimer = setTimeout(function() { sb.classList.remove('is-visible'); }, 3500);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,3568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Builder — Editor Drag & drop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+      background: #EDEDED;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Tokens ────────────────────────────────────── */
+    :root {
+      --blue-500: #3483FA;
+      --blue-600: #2968C8;
+      --blue-100: #CBE4FF;
+      --blue-400: #4189E6;
+      --green: #00A650;
+      --white: #FFFFFF;
+      --bg-primary: #EDEDED;
+      --bg-secondary: #F5F5F5;
+      --text-primary: rgba(0,0,0,0.9);
+      --text-secondary: rgba(0,0,0,0.55);
+      --text-inverted: #FFFFFF;
+      --shadow-flat: 0px 1px 2px 0px rgba(0,0,0,0.12);
+      --shadow-elevated: 0px 6px 16px 0px rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ────────────────────────────────────── */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 80px;
+      gap: 12px;
+      z-index: 100;
+    }
+    .header__left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 15px;
+    }
+    .breadcrumb__back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .breadcrumb__back-text {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--blue-500);
+      white-space: nowrap;
+    }
+    .breadcrumb__divider {
+      width: 1px;
+      height: 10.8px;
+      background: rgba(0,0,0,0.25);
+    }
+    .breadcrumb__current {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Pill / Badge */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 10px;
+      background: rgba(52,131,250,0.08);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 15px;
+      color: var(--blue-500);
+      white-space: nowrap;
+    }
+
+    /* Header buttons */
+    .header__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 16px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .btn--transparent {
+      background: transparent;
+      color: var(--blue-500);
+    }
+    .btn--transparent:hover { background: rgba(52,131,250,0.08); }
+    .btn--transparent:active { background: rgba(52,131,250,0.16); }
+    .btn--quiet {
+      background: transparent;
+      border: 1px solid rgba(0,0,0,0.25);
+      color: rgba(0,0,0,0.55);
+      cursor: not-allowed;
+    }
+    .btn--quiet.btn--disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .btn--loud {
+      background: var(--blue-500);
+      color: #FFFFFF;
+    }
+    .btn--loud:hover { background: var(--blue-600); }
+    .btn--loud:active { background: #1e4fa0; }
+    #btnGuardar:not(.btn--disabled) { background: #E3EEFC; color: #3483FA; }
+    #btnGuardar:not(.btn--disabled):hover  { background: #C6DCF7; }
+    #btnGuardar:not(.btn--disabled):active { background: #A8CAF3; }
+    .btn--loud.btn--disabled {
+      background: rgba(0,0,0,0.10);
+      color: rgba(0,0,0,0.25);
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* ── Layout shell ──────────────────────────────── */
+    .shell {
+      display: flex;
+      padding-top: 56px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar nav (80px) — Figma 15:5066 ─────────── */
+    .sidebar-nav {
+      width: 80px;
+      background: #FFFFFF;
+      border-right: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+    /* ── Active tab (Legacy) — flex-row gap:8px, pt:12 pb:12 */
+    .sidenav-item {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+    }
+    .sidenav-item--active {
+      gap: 8px;
+      padding: 12px 0;
+    }
+    /* ── Inactive tab (Andes X) — bg #EDEDED, rounded-tr:16, px:12 pt:12, flex:1 */
+    .sidenav-item--inactive {
+      background: #EDEDED;
+      border-radius: 0 16px 0 0;
+      flex: 1;
+      padding: 12px 12px 0;
+    }
+    .sidenav-item__indicator {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 0 4px 4px 0;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .sidenav-item--active .sidenav-item__indicator {
+      background: var(--blue-500);
+    }
+    /* No indicator bar on inactive tab */
+    .sidenav-item--inactive .sidenav-item__indicator {
+      display: none;
+    }
+    .sidenav-item__body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px;
+      width: 56px;
+      height: 55px;
+      cursor: pointer;
+    }
+    .sidenav-item--active .sidenav-item__body:hover { background: rgba(0,0,0,0.04); border-radius: 8px; }
+    .sidenav-item--inactive .sidenav-item__body:hover { background: rgba(0,0,0,0.06); border-radius: 8px; }
+    .sidenav-item__icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidenav-item__label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 15px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .sidenav-item--active .sidenav-item__label { color: var(--blue-500); }
+    .sidenav-item--inactive .sidenav-item__label { color: var(--text-secondary); }
+    /* Disabled state — andes-text-color-disabled rgba(0,0,0,0.25) */
+    .sidenav-item--disabled {
+      pointer-events: none;
+    }
+    .sidenav-item--disabled .sidenav-item__label { color: rgba(0,0,0,0.25) !important; }
+    .sidenav-item--disabled .sidenav-item__icon svg * { stroke: rgba(0,0,0,0.25); }
+
+    /* ── Left panel (elements) ─────────────────────── */
+    .panel-elements {
+      width: 325px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex-shrink: 0;
+    }
+    .panel-elements::-webkit-scrollbar { width: 4px; }
+    .panel-elements::-webkit-scrollbar-track { background: transparent; }
+    .panel-elements::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+    /* ── Context Panel — Figma 33:11638 ────────────── */
+    .context-panel {
+      width: 325px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      display: none;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .context-panel.visible { display: flex; }
+    .context-panel::-webkit-scrollbar { width: 4px; }
+    .context-panel::-webkit-scrollbar-track { background: transparent; }
+    .context-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
+
+    /* Header row — Title/S + close */
+    .ctx-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 32px 0;
+      flex-shrink: 0;
+    }
+    /* Title/S */
+    .ctx-title {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 25px;
+      color: rgba(0,0,0,0.9);
+    }
+    .ctx-close {
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; cursor: pointer;
+      border-radius: 4px; padding: 0; flex-shrink: 0;
+    }
+    .ctx-close:hover { background: rgba(0,0,0,0.06); }
+
+    /* Body */
+    .ctx-body {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      flex: 1;
+    }
+
+    /* Section */
+    .ctx-section { display: flex; flex-direction: column; gap: 24px; }
+
+    /* Divider */
+    .ctx-divider { height: 1px; background: rgba(0,0,0,0.1); width: 100%; }
+
+    /* Form field */
+    .ctx-field { display: flex; flex-direction: column; }
+    /* Body/S label */
+    .ctx-field__label {
+      font-size: 14px; font-weight: 400; line-height: 18px;
+      color: rgba(0,0,0,0.9); padding: 0 6px 4px;
+    }
+    .ctx-field--disabled .ctx-field__label { color: rgba(0,0,0,0.25); }
+
+    /* Dropdown select — h:48 border:1px radius:6 */
+    .ctx-select {
+      height: 48px;
+      border: 1px solid rgba(0,0,0,0.25);
+      border-radius: 6px;
+      padding: 0 8px 0 12px;
+      display: flex; align-items: center; gap: 12px;
+      background: #FFFFFF; cursor: pointer;
+    }
+    .ctx-field--disabled .ctx-select {
+      background: rgba(0,0,0,0.04);
+      border-style: dashed;
+      cursor: default;
+    }
+    /* Body/M */
+    .ctx-select__value {
+      flex: 1;
+      font-size: 16px; font-weight: 400; line-height: 20px;
+      color: rgba(0,0,0,0.9);
+    }
+    .ctx-field--disabled .ctx-select__value { color: rgba(0,0,0,0.25); }
+
+    /* Textfield */
+    .ctx-textfield {
+      height: 48px;
+      border: 1px solid rgba(0,0,0,0.25);
+      border-radius: 6px;
+      padding: 0 12px;
+      display: flex; align-items: center;
+      background: #FFFFFF;
+    }
+    .ctx-textfield:focus-within { border-color: #3483FA; }
+    .ctx-textfield__input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-family: inherit;
+      font-size: 16px; line-height: 20px; color: rgba(0,0,0,0.9);
+    }
+    .ctx-textfield__input::placeholder { color: rgba(0,0,0,0.55); }
+
+    /* Switch row — andes-switch with label */
+    .ctx-switch-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 12px 0; gap: 12px;
+    }
+    .ctx-switch-label {
+      font-size: 16px; font-weight: 400; line-height: 20px;
+      color: rgba(0,0,0,0.9); flex: 1;
+    }
+    /* Switch — on state */
+    .ctx-switch {
+      width: 40px; height: 24px;
+      border-radius: 12px;
+      background: #3483FA;
+      position: relative; flex-shrink: 0;
+      cursor: pointer; overflow: hidden;
+    }
+    .ctx-switch__thumb {
+      position: absolute; top: 2px; left: 18px;
+      width: 20px; height: 20px;
+      background: #FFFFFF; border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    /* Title/L */
+    .panel-title {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 35px;
+      color: var(--text-primary);
+    }
+
+    /* Section */
+    .element-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .element-section__title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 22px;
+      color: var(--text-secondary);
+    }
+    .element-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Element card — 72×78px */
+    .element-card {
+      width: 72px;
+      height: 78px;
+      background: #FFFFFF;
+      border: 1px solid var(--bg-secondary);
+      border-radius: 6px;
+      box-shadow: var(--shadow-flat);
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      transition: box-shadow 0.15s, transform 0.1s;
+    }
+    /* Children never initiate their own drag */
+    .element-card > * { pointer-events: none; }
+    .element-card:hover {
+      outline: 1.5px solid #3483FA;
+    }
+    .element-card:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-flat);
+    }
+    /* Drag state — slot placeholder con grip indicator */
+    .element-card--dragging {
+      background: rgba(52, 131, 250, 0.06) !important;
+      border: 1.5px dashed #3483FA !important;
+      box-shadow: none !important;
+      transform: none !important;
+      outline: none !important;
+    }
+    .element-card--dragging > * { opacity: 0; }
+    /* Grip dots — 2×3 centrado en el slot */
+    .element-card--dragging::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 20px;
+      background-image: radial-gradient(circle, rgba(52,131,250,0.55) 2px, transparent 2px);
+      background-size: 7px 7px;
+      background-position: 0 0;
+      pointer-events: none;
+    }
+    /* All non-dragged cards dim during drag — applied atomically with --dragging */
+    body.is-dragging { cursor: grabbing; }
+    body.is-dragging .element-card:not(.element-card--dragging) {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* Card thumbnail */
+    .element-card__thumb {
+      height: 55px;
+      background: linear-gradient(to top, #FFFFFF, var(--blue-100));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      flex-shrink: 0;
+      border-radius: 6px 6px 0 0;
+    }
+    /* Card label */
+    .element-card__label {
+      height: 23px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-primary);
+      text-align: center;
+      background: #FFFFFF;
+    }
+
+    /* Thumb content icons */
+    .thumb-header {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .thumb-header__lines {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 20px;
+    }
+    .thumb-header__line-1 {
+      height: 3px;
+      background: var(--blue-500);
+      border-radius: 1px;
+    }
+    .thumb-header__line-2 {
+      height: 2px;
+      background: rgba(65,137,230,0.4);
+      border-radius: 1px;
+    }
+    .thumb-header__dot {
+      width: 12px;
+      height: 12px;
+      background: var(--blue-400);
+      border-radius: 50%;
+    }
+    .thumb-seccion {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      width: 46px;
+      height: 29px;
+    }
+    .thumb-text {
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 30px;
+      color: var(--blue-500);
+    }
+    .thumb-image {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-image__icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-divisor {
+      width: 48px;
+      height: 2px;
+      background: rgba(65,137,230,0.4);
+      border-radius: 2px;
+    }
+    .thumb-boton {
+      background: var(--blue-500);
+      border-radius: 2px;
+      width: 44px;
+      height: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-boton__line {
+      width: 30px;
+      height: 3px;
+      background: #FFFFFF;
+      border-radius: 1px;
+    }
+    .thumb-lista {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .thumb-lista__title {
+      width: 26px;
+      height: 3px;
+      background: var(--blue-500);
+      border-radius: 1px;
+    }
+    .thumb-lista__rows {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .thumb-lista__row {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .thumb-lista__dot {
+      width: 4px;
+      height: 4px;
+      background: var(--blue-500);
+      border-radius: 1px;
+    }
+    .thumb-lista__line {
+      width: 33px;
+      height: 3px;
+      background: rgba(65,137,230,0.4);
+      border-radius: 1px;
+    }
+    .thumb-html {
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 30px;
+      color: var(--blue-500);
+    }
+
+    /* ── Canvas area — full width ──────────────────── */
+    .canvas-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 68px 32px 32px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .canvas-area::-webkit-scrollbar { width: 8px; }
+    .canvas-area::-webkit-scrollbar-track { background: #EDEDED; border-radius: 4px; }
+    .canvas-area::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.22);
+      border-radius: 4px;
+      border: 2px solid #EDEDED;
+    }
+    .canvas-area::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.38); }
+
+    /* Email canvas */
+    .email-canvas {
+      width: 640px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      box-shadow: var(--shadow-elevated);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: fit-content;
+      position: relative;
+      align-self: flex-start;
+    }
+
+    /* MercadoLibre logo bar */
+    .email-logo-bar {
+      background: #F5F5F5;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+    }
+    .ml-logo {
+      width: 124px;
+      height: 32px;
+      object-fit: contain;
+    }
+
+    /* Body wrapper — px:60 gap:10 (Figma px-[60px] gap-[10px]) */
+    .email-body-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 60px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    /* Email header component — 520px inside wrapper */
+    .email-header-module {
+      background: #FFFFFF;
+      border-left: 4px solid var(--green);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 6px;
+      box-shadow: var(--shadow-flat);
+      width: 100%;
+    }
+    .email-header-module__left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .email-header-module__title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 25px;
+      color: var(--text-primary);
+    }
+    .email-header-module__subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: var(--text-secondary);
+    }
+    /* Thumbnail — cuadrado con checkerboard, sin wrapper gris */
+    .email-header-module__thumb {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* Empty state card — 520px inside wrapper, h:308px fijo */
+    .empty-card {
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: var(--shadow-flat);
+      padding: 40px;
+      width: 100%;
+      height: 308px;
+      min-height: 308px;
+      max-height: 308px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    /* filling-card — emptyCard after content is dropped inside */
+    .filling-card {
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: var(--shadow-flat);
+      padding: 40px;
+      width: 100%;
+      min-height: 308px;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+    /* Modules inside filling-card or mod-seccion — reset own padding */
+    .filling-card .mod-texto,
+    .filling-card .mod-imagen,
+    .filling-card .mod-divisor,
+    .filling-card .mod-boton,
+    .filling-card .mod-lista,
+    .filling-card .mod-html { padding: 0; background: transparent; }
+    .mod-seccion .mod-imagen { padding: 0; }
+    /* filling-card drag-over: blue line at bottom + subtle tint */
+    .filling-card--drag-over { background: rgba(52,131,250,0.04); }
+    .filling-card--drag-over::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: #3483FA;
+      border-radius: 6px;
+    }
+
+    /* Items inside a filling-card */
+    .filling-item {
+      position: relative;
+      width: 100%;
+      border: 1.5px solid transparent;
+      border-radius: 4px;
+    }
+    .filling-item--active { border-color: #3483FA; }
+
+    /* Drop placeholder — blue bar inserted between items during drag */
+    .drop-placeholder {
+      width: 100%;
+      height: 4px;
+      background: #3483FA;
+      border-radius: 2px;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+
+    /* Action bar — Figma 24:797 | Elevated shadow | 4px padding, 4px gap */
+    /* Floating: position:fixed, top/left set by JS on selectFillingItem */
+    .action-bar {
+      position: fixed;
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 4px;
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 200;
+    }
+    .filling-item--active .action-bar { display: flex; }
+
+    /* _button/simple | 28×28 | icon 16px */
+    .action-bar__btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      padding: 0;
+      cursor: pointer;
+      color: rgba(0,0,0,0.55);
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s;
+    }
+    .action-bar__btn:hover { background: rgba(0,0,0,0.06); color: rgba(0,0,0,0.9); }
+    .action-bar__btn--delete:hover { color: #F23D4F; background: rgba(242,61,79,0.06); }
+    .action-bar__btn:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+
+    /* Content drop indicator — emptyCard, 2px line at top */
+    .empty-card--drag-over {
+      background: rgba(52,131,250,0.04);
+    }
+    .empty-card--drag-over::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: #3483FA;
+      border-radius: 6px;
+    }
+    /* Module drop indicator — 2px blue line appended at end of body-wrapper */
+    .email-body-wrapper.module-drop-active::after {
+      content: '';
+      display: block;
+      height: 2px;
+      background: #3483FA;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      width: 311px;
+    }
+    .empty-state__illustration {
+      width: 240px;
+      height: 88px;
+      position: relative;
+    }
+
+    /* Empty state image */
+    .empty-state__img {
+      width: 240px;
+      height: 88px;
+      object-fit: contain;
+    }
+
+    .empty-state__text {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    /* Email footer — full Figma spec */
+    .email-footer {
+      background: #F5F5F5;
+      padding: 16px 40px 32px;
+      margin-top: 10px;
+    }
+    .email-footer__contact {
+      padding: 16px 0;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-secondary);
+    }
+    .email-footer__contact a {
+      color: var(--blue-500);
+      text-decoration: none;
+    }
+    .email-footer__apps-social {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 12px 0;
+    }
+    .email-footer__apps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .email-footer__apps-label {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-secondary);
+    }
+    .email-footer__app-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .email-footer__app-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid rgba(0,0,0,0.20);
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+      background: #FFFFFF;
+    }
+    .email-footer__social {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .email-footer__social-hashtag {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-secondary);
+    }
+    .email-footer__social-icons {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .email-footer__social-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(0,0,0,0.55);
+      text-decoration: none;
+      opacity: 0.8;
+      transition: opacity 0.15s;
+    }
+    .email-footer__social-icon:hover { opacity: 1; }
+    .email-footer__divider {
+      height: 1px;
+      background: var(--bg-secondary);
+      margin: 12px 0;
+    }
+    .email-footer__legal {
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 16px;
+      color: rgba(0,0,0,0.35);
+      margin-bottom: 10px;
+    }
+    .email-footer__optout {
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 16px;
+      color: rgba(0,0,0,0.55);
+      margin-bottom: 4px;
+    }
+    .email-footer__optout a {
+      color: var(--blue-500);
+      text-decoration: none;
+    }
+    .email-footer__privacy {
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 16px;
+      color: rgba(0,0,0,0.55);
+      margin-top: 4px;
+    }
+    .email-footer__privacy a {
+      color: var(--blue-500);
+      text-decoration: none;
+    }
+
+    /* Added modules in canvas */
+    .canvas-module {
+      margin: 2px 0;
+      position: relative;
+      cursor: pointer;
+      transition: outline 0.1s;
+    }
+    .canvas-module:hover {
+      outline: 2px solid var(--blue-500);
+      outline-offset: -2px;
+    }
+    .canvas-module__delete {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      background: #FFFFFF;
+      border: 1px solid var(--bg-secondary);
+      border-radius: 4px;
+      box-shadow: var(--shadow-flat);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .canvas-module:hover .canvas-module__delete { display: flex; }
+    .canvas-module__delete:hover { background: rgba(255,62,62,0.08); }
+    /* Sección selected state — outline on mod-seccion, action bar via canvas-module--active */
+    .mod-seccion--active {
+      outline: 2px solid #3483FA;
+      outline-offset: -2px;
+    }
+    .seccion-action-bar { display: none; }
+    .canvas-module--active .seccion-action-bar { display: flex; }
+
+    /* Module: Texto — Figma 26:2787 */
+    .mod-texto {
+      background: #FFFFFF;
+      padding: 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .mod-texto__title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 22px;
+      color: rgba(0,0,0,0.9);
+    }
+    .mod-texto__body {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 20px;
+      color: rgba(0,0,0,0.9);
+    }
+
+    /* Module: Imagen */
+    .mod-imagen {
+      background: #FFFFFF;
+      padding: 16px 40px;
+    }
+    .mod-imagen__placeholder {
+      width: 100%;
+      height: 180px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Module: Divisor */
+    .mod-divisor {
+      background: #FFFFFF;
+      padding: 16px 40px;
+    }
+    .mod-divisor__line {
+      height: 1px;
+      background: var(--bg-secondary);
+      border-radius: 1px;
+    }
+
+    /* Module: Botón */
+    .mod-boton {
+      background: #FFFFFF;
+      padding: 16px 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .mod-boton__btn {
+      background: var(--blue-500);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 24px;
+      border-radius: 4px;
+      border: none;
+      cursor: default;
+    }
+
+    /* Module: Lista — Figma 26:2791 */
+    .mod-lista {
+      background: #FFFFFF;
+      padding: 16px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mod-lista__title {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 22px;
+      color: rgba(0,0,0,0.9);
+    }
+    .mod-lista__rows {
+      display: flex;
+      flex-direction: column;
+    }
+    .mod-lista__row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 0 13px;
+    }
+    .mod-lista__row + .mod-lista__row {
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+    .mod-lista__icon {
+      width: 20px;
+      height: 20px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .mod-lista__row-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .mod-lista__row-title {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 20px;
+      color: rgba(0,0,0,0.9);
+    }
+    .mod-lista__row-desc {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: rgba(0,0,0,0.55);
+    }
+
+    /* Module: HTML */
+    .mod-html {
+      background: #FFFFFF;
+      padding: 16px 40px;
+    }
+    .mod-html__code {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 18px;
+      padding: 12px;
+      border-radius: 4px;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* Module: Sección */
+    .mod-seccion {
+      background: #FFFFFF;
+      border-radius: 6px;
+      padding: 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mod-seccion__title {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 25px;
+      color: var(--text-primary);
+    }
+    /* mod-seccion empty drop zone */
+    .mod-seccion--empty {
+      padding: 0 !important;
+      gap: 0 !important;
+      height: 228px;
+      min-height: 228px;
+      max-height: 228px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.15s;
+    }
+    .mod-seccion--empty.drag-over {
+      background: rgba(52,131,250,0.04);
+    }
+    .mod-seccion--empty.drag-over::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: #3483FA;
+    }
+    .mod-seccion__body {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 20px;
+      color: var(--text-secondary);
+    }
+
+    /* ── Email header item — seleccionable ─────────── */
+    .email-header-item {
+      position: relative;
+      width: 100%;
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .email-header-item--active {
+      border-color: #3483FA;
+    }
+    .email-header-item--active .action-bar { display: flex; }
+
+    /* ── Floating toolbar — Figma 28:3635 ─────────── */
+    /* position:fixed, top/left set by JS */
+    .floating-toolbar {
+      position: fixed;
+      background: #FFFFFF;
+      border: 1px solid #F5F5F5;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 2px 8px;
+      display: none;
+      align-items: center;
+      z-index: 200;
+    }
+    .floating-toolbar.visible { display: flex; }
+    .ft-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    /* Size button */
+    .ft-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .ft-btn:hover  { background: rgba(0,0,0,0.06); }
+    .ft-btn:active { background: rgba(0,0,0,0.10); }
+    .ft-btn--open  { background: rgba(65,137,230,0.15); }
+    .ft-btn--open .ft-size-label { color: #3483FA; }
+    .ft-size-label {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 12px;
+      color: rgba(0,0,0,0.9);
+    }
+    /* Vertical divider */
+    .ft-divider {
+      width: 1px;
+      height: 16px;
+      background: #F5F5F5;
+      flex-shrink: 0;
+    }
+    /* Color swatch */
+    .ft-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #000000;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: box-shadow 0.1s;
+    }
+    .ft-color:hover  { box-shadow: 0 0 0 2px rgba(0,0,0,0.18); }
+    .ft-color:active { box-shadow: 0 0 0 3px rgba(0,0,0,0.30); }
+    /* Format group: B, I, U */
+    .ft-format-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ft-format-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      padding: 4px 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: 16px;
+      color: rgba(0,0,0,0.9);
+    }
+    .ft-format-btn:hover  { background: rgba(0,0,0,0.06); }
+    .ft-format-btn:active { background: rgba(0,0,0,0.10); }
+    .ft-format-btn--active { background: rgba(65,137,230,0.15); color: #3483FA; }
+    .ft-format-btn--active:hover  { background: rgba(65,137,230,0.22); }
+    .ft-format-btn--active:active { background: rgba(65,137,230,0.30); }
+    .ft-format-btn--bold    { font-weight: 600; }
+    .ft-format-btn--italic  { font-style: italic; }
+    .ft-format-btn--underline { text-decoration: underline; text-decoration-skip-ink: none; }
+    /* Icon buttons (lightning, link) */
+    .ft-icon-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      flex-shrink: 0;
+      color: rgba(0,0,0,0.9);
+    }
+    .ft-icon-btn:hover  { background: rgba(0,0,0,0.06); }
+    .ft-icon-btn:active { background: rgba(0,0,0,0.10); }
+    .ft-icon-btn--active { background: rgba(65,137,230,0.15); }
+    .ft-icon-btn--active:hover  { background: rgba(65,137,230,0.22); }
+    .ft-icon-btn--active:active { background: rgba(65,137,230,0.30); }
+    .ft-icon-btn--active svg path[fill] { fill: #3483FA; }
+    .ft-icon-btn--active svg path[stroke] { stroke: #3483FA; }
+
+    /* ── Variable menu — Figma 37:1198 ─────────────── */
+    .var-menu {
+      position: fixed;
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 4px 0;
+      min-width: 220px;
+      display: none;
+      flex-direction: column;
+      z-index: 300;
+      overflow: hidden;
+    }
+    .var-menu.open { display: flex; }
+    /* Search box row */
+    .var-menu__search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 48px;
+      padding: 0 12px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      flex-shrink: 0;
+    }
+    .var-menu__search-input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-family: inherit;
+      font-size: 14px; line-height: 18px; color: rgba(0,0,0,0.9);
+    }
+    .var-menu__search-input::placeholder { color: rgba(0,0,0,0.25); }
+    /* Option item */
+    .var-menu__option {
+      display: flex; align-items: center;
+      padding: 0 16px;
+      height: 48px;
+      font-size: 16px; font-weight: 400; line-height: 20px;
+      color: rgba(0,0,0,0.9);
+      cursor: pointer; white-space: nowrap;
+    }
+    .var-menu__option:hover { background: rgba(0,0,0,0.04); }
+    /* Group label — Body/XS-semibold */
+    .var-menu__group {
+      padding: 25px 16px 8px;
+      font-size: 12px; font-weight: 600; line-height: 15px;
+      color: rgba(0,0,0,0.55);
+    }
+
+    /* ── Alt-text popover — Figma 48:1325 ─────────── */
+    .var-popover {
+      position: fixed;
+      background: #FFFFFF;
+      border-radius: 6px;
+      box-shadow: 0px 0px 6px 0px rgba(0,0,0,0.10), 0px 6px 16px 0px rgba(0,0,0,0.10);
+      padding: 12px;
+      width: 352px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 400;
+    }
+    .var-popover.open { display: flex; }
+    /* Upward arrow tip */
+    .var-popover::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      left: 16px;
+      width: 14px;
+      height: 14px;
+      background: #FFFFFF;
+      transform: rotate(-45deg);
+      box-shadow: -1px -1px 2px rgba(0,0,0,0.08);
+    }
+    .var-popover__label {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 18px;
+      color: rgba(0,0,0,0.9);
+      padding-left: 6px;
+      display: block;
+    }
+    .var-popover__field { display: flex; flex-direction: column; gap: 4px; }
+    .var-popover__textarea {
+      background: #FFFFFF;
+      border: 2px solid #3483FA;
+      border-radius: 6px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+    }
+    .var-popover__input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: 20px;
+      color: rgba(0,0,0,0.9);
+    }
+    .var-popover__input::placeholder { color: rgba(0,0,0,0.25); }
+    .var-popover__helper {
+      border: none; background: transparent; cursor: pointer; padding: 0;
+      display: flex; align-items: center; color: rgba(0,0,0,0.25); flex-shrink: 0;
+    }
+    .var-popover__helper:hover { color: rgba(0,0,0,0.55); }
+    .var-popover__checkbox-row {
+      display: flex; align-items: flex-start; gap: 12px; padding: 6px 0;
+    }
+    .var-popover__checkbox {
+      flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px;
+      cursor: pointer; accent-color: #3483FA;
+    }
+    .var-popover__checkbox-label {
+      font-size: 12px; font-weight: 400; line-height: 15px;
+      color: rgba(0,0,0,0.9); cursor: pointer;
+    }
+    .var-popover__btn {
+      font-family: inherit; font-size: 13px; font-weight: 600; line-height: 18px;
+      padding: 4px 12px; height: 28px; border-radius: 4px; border: none;
+      cursor: pointer; background: var(--blue-500); color: #FFFFFF;
+      transition: background 0.12s;
+    }
+    .var-popover__btn:hover:not(:disabled) { background: var(--blue-600); }
+    .var-popover__btn:disabled {
+      background: rgba(0,0,0,0.10); color: rgba(0,0,0,0.25); cursor: not-allowed;
+    }
+
+    /* ── Feedback bar — Figma 48:1364 ──────────────── */
+    .feedback-bar {
+      position: fixed;
+      bottom: 0; left: 80px;
+      height: 64px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      z-index: 150;
+      pointer-events: none;
+    }
+    .feedback-bar.open { display: flex; }
+    .feedback-bar__text {
+      font-size: 18px; font-weight: 400; line-height: 22px;
+      color: #F23D4F; white-space: nowrap;
+    }
+
+    /* ── Vista previa — fixed top-right ────────────── */
+    .preview-area {
+      position: fixed;
+      top: 72px;
+      right: 40px;
+      z-index: 90;
+    }
+
+    /* Segmented control — dos botones 32×32 */
+    .vp-segmented {
+      display: inline-flex;
+      width: 64px;
+      margin-right: 48px;
+      height: 32px;
+      border-radius: 4px;
+      box-shadow: var(--shadow-flat);
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.10);
+    }
+    .vp-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: #FFFFFF;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+    .vp-btn:first-child {
+      border-right: 1px solid rgba(0,0,0,0.10);
+    }
+    .vp-btn:hover:not(.vp-btn--active) {
+      background: rgba(0,0,0,0.04);
+    }
+    /* Estado activo — fondo #C6DCF7 + ícono #3483FA */
+    .vp-btn--active {
+      background: #C6DCF7;
+    }
+    .vp-btn--active svg rect,
+    .vp-btn--active svg path { stroke: #3483FA; }
+    .vp-btn--active svg circle { fill: #3483FA; stroke: none; }
+
+    /* ── GA_notification — Figma 29:4186 ──────────── */
+    .ga-notification {
+      display: none;
+      align-items: center;
+      gap: 4px;
+    }
+    .ga-notification.visible { display: flex; }
+    /* Body/S | andes-text-color-disabled */
+    .ga-notification__label {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: rgba(0,0,0,0.25);
+      white-space: nowrap;
+    }
+    /* Circular progress | 16px | indeterminate | ML blue */
+    .ga-notification__spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(52,131,250,0.2);
+      border-top-color: #3483FA;
+      animation: ga-spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes ga-spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ────────────────────────────────────── */
+    .footer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #FFFFFF;
+      box-shadow: 0px -1px 2px 0px rgba(0,0,0,0.12);
+      border-top: 1px solid rgba(0,0,0,0.04);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 0 80px;
+      z-index: 100;
+    }
+
+    /* ── Tooltip walkthrough ───────────────────────── */
+    .tooltip-walkthrough {
+      position: fixed;
+      top: 72px;
+      right: 32px;
+      width: 312px;
+      background: var(--blue-500);
+      border-radius: 6px;
+      box-shadow: var(--shadow-elevated);
+      padding: 16px;
+      display: flex;
+      gap: 16px;
+      z-index: 200;
+      transition: opacity 0.2s, transform 0.2s;
+      overflow: hidden;
+    }
+    .tooltip-walkthrough.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+    }
+    .tooltip-walkthrough__bg {
+      position: absolute;
+      left: 0;
+      top: -8px;
+      width: 96px;
+      height: 104px;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+    .tooltip-walkthrough__content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .tooltip-walkthrough__title {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 20px;
+      color: #FFFFFF;
+    }
+    .tooltip-walkthrough__body {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: #FFFFFF;
+      opacity: 0.9;
+    }
+    .tooltip-walkthrough__actions {
+      padding-top: 12px;
+    }
+    .btn-entendido {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      padding: 0 16px;
+      background: #FFFFFF;
+      color: var(--blue-500);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-entendido:hover { background: rgba(255,255,255,0.9); }
+    .btn-entendido:active { background: rgba(255,255,255,0.8); }
+
+    /* ── Snackbar — Figma 27:3614 ──────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1A1A1A;
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 20px;
+      padding: 22px 24px;
+      border-radius: 6px;
+      box-shadow: 0px 6px 16px 0px rgba(0,0,0,0.10);
+      width: 600px;
+      z-index: 300;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Drag ghost ────────────────────────────────── */
+    .drag-ghost {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.85;
+      transform: translate(-50%, -50%) scale(0.9);
+      display: none;
+    }
+
+    /* Feedback positive icon */
+    .icon-positive {
+      width: 20px;
+      height: 20px;
+      background: var(--green);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .icon-positive svg { display: block; }
+
+    /* Checkerboard pattern — thumbnail fills parent 80×80 */
+    .thumb-checker {
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+
+    /* Scrollbar global */
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header__left">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb">
+        <a href="libreria.html" class="breadcrumb__back">
+          <svg width="5" height="9" viewBox="0 0 5 9" fill="none" aria-hidden="true">
+            <path d="M4 1L1 4.5L4 8" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="breadcrumb__back-text">Volver a Librería</span>
+        </a>
+        <div class="breadcrumb__divider"></div>
+        <span class="breadcrumb__current">Editor Drag &amp; drop</span>
+      </nav>
+      <!-- Pill -->
+      <span class="pill" style="background:#3483FA;color:#FFFFFF;">ES. Voseado</span>
+    </div>
+    <!-- Buttons -->
+    <div class="header__actions">
+      <button class="btn btn--transparent" onclick="handleDownload()">Descargar HTML</button>
+      <button class="btn btn--loud btn--disabled" disabled id="btnGuardar">Guardar en Librería</button>
+    </div>
+  </header>
+
+  <!-- MAIN SHELL -->
+  <div class="shell">
+
+    <!-- SIDEBAR NAV (80px) -->
+    <nav class="sidebar-nav">
+      <!-- Legacy — active -->
+      <div class="sidenav-item sidenav-item--active" onclick="switchSidenav(this, 'legacy')">
+        <div class="sidenav-item__indicator"></div>
+        <div class="sidenav-item__body">
+          <div class="sidenav-item__icon">
+            <!-- View Relevant icon — Legacy -->
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="7" height="7" rx="1" fill="#3483FA"/>
+              <rect x="11" y="2" width="7" height="7" rx="1" fill="#3483FA"/>
+              <rect x="2" y="11" width="7" height="7" rx="1" fill="#3483FA"/>
+              <rect x="11" y="11" width="7" height="7" rx="1" fill="#3483FA"/>
+            </svg>
+          </div>
+          <span class="sidenav-item__label">Legacy</span>
+        </div>
+      </div>
+
+      <!-- Andes X — inactive -->
+      <div class="sidenav-item sidenav-item--inactive" id="sidenavAndesX" onclick="window.location.href='email-builder-x.html'">
+        <div class="sidenav-item__indicator"></div>
+        <div class="sidenav-item__body">
+          <div class="sidenav-item__icon">
+            <!-- View Relevant icon — Andes X -->
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="7" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+              <path d="M7 10h6M10 7v6" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="sidenav-item__label">Andes X</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- LEFT PANEL — Elementos -->
+    <aside class="panel-elements">
+      <p class="panel-title">Elementos</p>
+
+      <!-- Módulos -->
+      <div class="element-section">
+        <p class="element-section__title">Módulos</p>
+        <div class="element-grid">
+
+          <!-- Header card -->
+          <div class="element-card"
+               draggable="true"
+               data-type="header"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('header')">
+            <div class="element-card__thumb">
+              <div class="thumb-header">
+                <div class="thumb-header__lines">
+                  <div class="thumb-header__line-1"></div>
+                  <div class="thumb-header__line-2"></div>
+                </div>
+                <div class="thumb-header__dot"></div>
+              </div>
+            </div>
+            <div class="element-card__label">Header</div>
+          </div>
+
+          <!-- Sección card -->
+          <div class="element-card"
+               draggable="true"
+               data-type="seccion"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('seccion')">
+            <div class="element-card__thumb">
+              <div class="thumb-seccion"></div>
+            </div>
+            <div class="element-card__label">Sección</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Contenidos -->
+      <div class="element-section">
+        <p class="element-section__title">Contenidos</p>
+        <div class="element-grid">
+
+          <!-- Texto -->
+          <div class="element-card"
+               draggable="true"
+               data-type="texto"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('texto')">
+            <div class="element-card__thumb">
+              <span class="thumb-text">Aa</span>
+            </div>
+            <div class="element-card__label">Texto</div>
+          </div>
+
+          <!-- Imagen -->
+          <div class="element-card"
+               draggable="true"
+               data-type="imagen"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('imagen')">
+            <div class="element-card__thumb">
+              <div class="thumb-image">
+                <div class="thumb-image__icon">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="1" y="1" width="14" height="14" rx="2" stroke="rgba(65,137,230,0.7)" stroke-width="1.5"/>
+                    <circle cx="5.5" cy="5.5" r="1.5" fill="rgba(65,137,230,0.7)"/>
+                    <path d="M1 11l4-4 3 3 2-2 5 5" stroke="rgba(65,137,230,0.7)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="element-card__label">Imagen</div>
+          </div>
+
+          <!-- Divisor -->
+          <div class="element-card"
+               draggable="true"
+               data-type="divisor"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('divisor')">
+            <div class="element-card__thumb">
+              <div class="thumb-divisor"></div>
+            </div>
+            <div class="element-card__label">Divisor</div>
+          </div>
+
+          <!-- Botón -->
+          <div class="element-card"
+               draggable="true"
+               data-type="boton"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('boton')">
+            <div class="element-card__thumb">
+              <div class="thumb-boton">
+                <div class="thumb-boton__line"></div>
+              </div>
+            </div>
+            <div class="element-card__label">Botón</div>
+          </div>
+
+          <!-- Lista -->
+          <div class="element-card"
+               draggable="true"
+               data-type="lista"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('lista')">
+            <div class="element-card__thumb">
+              <div class="thumb-lista">
+                <div class="thumb-lista__title"></div>
+                <div class="thumb-lista__rows">
+                  <div class="thumb-lista__row">
+                    <div class="thumb-lista__dot"></div>
+                    <div class="thumb-lista__line"></div>
+                  </div>
+                  <div class="thumb-lista__row">
+                    <div class="thumb-lista__dot"></div>
+                    <div class="thumb-lista__line"></div>
+                  </div>
+                  <div class="thumb-lista__row">
+                    <div class="thumb-lista__dot"></div>
+                    <div class="thumb-lista__line"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="element-card__label">Lista</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Código -->
+      <div class="element-section">
+        <p class="element-section__title">Código</p>
+        <div class="element-grid">
+
+          <!-- HTML -->
+          <div class="element-card"
+               draggable="true"
+               data-type="html"
+               ondragstart="onDragStart(event)"
+               ondragend="onDragEnd(event)"
+               onclick="addModule('html')">
+            <div class="element-card__thumb">
+              <span class="thumb-html">&lt;/&gt;</span>
+            </div>
+            <div class="element-card__label">HTML</div>
+          </div>
+
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTEXT PANEL — Figma 33:11638 -->
+    <aside class="context-panel" id="contextPanel">
+      <!-- Header row: title + close -->
+      <div class="ctx-header">
+        <span class="ctx-title" id="ctxTitle">Header</span>
+        <button class="ctx-close" onclick="closeContextPanel()" title="Cerrar">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M5 5l10 10M15 5L5 15" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Scrollable body -->
+      <div class="ctx-body">
+
+        <!-- Section 1 — Tipo + Posición badge -->
+        <div class="ctx-section">
+
+          <!-- Tipo — dropdown enabled -->
+          <div class="ctx-field">
+            <span class="ctx-field__label">Tipo</span>
+            <div class="ctx-select">
+              <span class="ctx-select__value">Neutral</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 8l5 5 5-5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Posición badge — dropdown disabled -->
+          <div class="ctx-field ctx-field--disabled">
+            <span class="ctx-field__label">Posición badge</span>
+            <div class="ctx-select">
+              <span class="ctx-select__value">None</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 8l5 5 5-5" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Divider -->
+        <div class="ctx-divider"></div>
+
+        <!-- Section 2 — Thumbnail + fields -->
+        <div class="ctx-section">
+
+          <!-- Thumbnail — switch row | andes-switch on -->
+          <div class="ctx-switch-row">
+            <span class="ctx-switch-label">Thumbnail</span>
+            <div class="ctx-switch">
+              <div class="ctx-switch__thumb"></div>
+            </div>
+          </div>
+
+          <!-- Contenido de thumbnail — dropdown -->
+          <div class="ctx-field">
+            <span class="ctx-field__label">Contenido de thumbnail</span>
+            <div class="ctx-select">
+              <span class="ctx-select__value">Imagen</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 8l5 5 5-5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- URL Imagen — textfield -->
+          <div class="ctx-field">
+            <span class="ctx-field__label">URL Imagen</span>
+            <div class="ctx-textfield">
+              <input class="ctx-textfield__input" type="text" placeholder="Ingresa la URL de la imagen">
+            </div>
+          </div>
+
+          <!-- Forma — dropdown -->
+          <div class="ctx-field">
+            <span class="ctx-field__label">Forma</span>
+            <div class="ctx-select">
+              <span class="ctx-select__value">Circular</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 8l5 5 5-5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Texto alternativo — dropdown -->
+          <div class="ctx-field">
+            <span class="ctx-field__label">Texto alternativo</span>
+            <div class="ctx-select">
+              <span class="ctx-select__value">Subtitle</span>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 8l5 5 5-5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CANVAS AREA -->
+    <main class="canvas-area"
+          id="canvasArea"
+          ondragover="onDragOver(event)"
+          ondragleave="onDragLeave(event)"
+          ondrop="onDrop(event)">
+
+      <div id="emailCanvas" class="email-canvas">
+
+        <!-- MercadoLibre logo -->
+        <div class="email-logo-bar">
+          <img src="Mercado Libre.png" alt="Mercado Libre" class="ml-logo">
+        </div>
+
+        <!-- Body wrapper — px:60 gap:10 (Figma px-[60px] gap-[10px]) -->
+        <div class="email-body-wrapper">
+
+          <!-- Email Header Module -->
+          <div class="email-header-item" onclick="selectHeaderItem(event, this)">
+            <div class="email-header-module">
+              <div class="email-header-module__left">
+                <div class="email-header-module__title">
+                  <span class="icon-positive" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6l2.5 2.5 4.5-5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span contenteditable="true" onclick="event.stopPropagation()" style="outline:none;min-width:4px;">Pagaste tu factura a tiempo</span>
+                </div>
+                <div class="email-header-module__subtitle" contenteditable="true" onclick="event.stopPropagation()" style="outline:none;min-width:4px;">Vencia mañana</div>
+              </div>
+              <div class="email-header-module__thumb">
+                <div class="thumb-checker"></div>
+              </div>
+            </div>
+            <!-- Action bar: delete only (singleton) -->
+            <div class="action-bar" onclick="event.stopPropagation()">
+              <button class="action-bar__btn action-bar__btn--delete" onclick="removeHeaderItem(this)" title="Eliminar">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+                  <path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+                  <path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty state / Drop zone -->
+          <div class="filling-card" id="emptyCard"
+               ondragover="onCardDragOver(event)"
+               ondragleave="onCardDragLeave(event)"
+               ondrop="onCardDrop(event)">
+            <!-- Imagen por defecto -->
+            <div class="filling-item" onclick="selectFillingItem(event, this)">
+              <div class="mod-imagen">
+                <div class="mod-imagen__placeholder">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect x="2" y="2" width="28" height="28" rx="4" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/>
+                    <circle cx="10.5" cy="10.5" r="2.5" fill="rgba(0,0,0,0.25)"/>
+                    <path d="M2 22l8-8 6 6 4-4 10 10" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Subí o arrastrá una imagen aquí</span>
+                </div>
+              </div>
+              <div class="action-bar" onclick="event.stopPropagation()">
+                <button class="action-bar__btn action-bar__btn--delete" onclick="removeFillingItem(this)" title="Eliminar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--copy" onclick="copyFillingItem(this)" title="Copiar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.25"/><rect x="2.5" y="5.5" width="8.5" height="8.5" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.25"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--up" onclick="moveFillingItemUp(this)" title="Mover arriba"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--down" onclick="moveFillingItemDown(this)" title="Mover abajo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+            <!-- Título por defecto -->
+            <div class="filling-item" onclick="selectFillingItem(event, this)">
+              <p class="mod-texto__title" contenteditable="true">Card title</p>
+              <div class="action-bar" onclick="event.stopPropagation()">
+                <button class="action-bar__btn action-bar__btn--delete" onclick="removeFillingItem(this)" title="Eliminar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--copy" onclick="copyFillingItem(this)" title="Copiar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.25"/><rect x="2.5" y="5.5" width="8.5" height="8.5" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.25"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--up" onclick="moveFillingItemUp(this)" title="Mover arriba"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--down" onclick="moveFillingItemDown(this)" title="Mover abajo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+            <!-- Cuerpo por defecto -->
+            <div class="filling-item" onclick="selectFillingItem(event, this)">
+              <p class="mod-texto__body" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam.</p>
+              <div class="action-bar" onclick="event.stopPropagation()">
+                <button class="action-bar__btn action-bar__btn--delete" onclick="removeFillingItem(this)" title="Eliminar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--copy" onclick="copyFillingItem(this)" title="Copiar"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.25"/><rect x="2.5" y="5.5" width="8.5" height="8.5" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.25"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--up" onclick="moveFillingItemUp(this)" title="Mover arriba"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 14V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="action-bar__btn action-bar__btn--down" onclick="moveFillingItemDown(this)" title="Mover abajo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/><path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Added modules container -->
+          <div id="modulesContainer"></div>
+
+        </div><!-- /.email-body-wrapper -->
+
+        <!-- Email footer — Figma 15:4632 -->
+        <div class="email-footer">
+
+          <!-- Contact row -->
+          <div class="email-footer__contact">
+            <p>Texto de contacto vestibulum erat cursus. <a href="#">Link de contacto.</a></p>
+          </div>
+
+          <!-- App download + Social row -->
+          <div class="email-footer__apps-social">
+            <div class="email-footer__apps">
+              <p class="email-footer__apps-label">¡Comprá y vendé desde tu celular!</p>
+              <div class="email-footer__app-buttons">
+                <!-- Google Play -->
+                <a href="#" class="email-footer__app-btn">
+                  <svg width="13" height="14" viewBox="0 0 13 14" fill="none" aria-hidden="true">
+                    <path d="M0.5 1.5L7.5 7L0.5 12.5V1.5Z" fill="#4285F4"/>
+                    <path d="M0.5 1.5L7.5 7L4.5 10L0.5 1.5Z" fill="#34A853"/>
+                    <path d="M0.5 12.5L4.5 10L7.5 7L0.5 12.5Z" fill="#FBBC05"/>
+                    <path d="M7.5 7L12.5 7L4.5 10L7.5 7Z" fill="#EA4335"/>
+                    <path d="M7.5 7L4.5 4L12.5 7H7.5Z" fill="#EA4335"/>
+                    <path d="M4.5 4L7.5 7L0.5 1.5L4.5 4Z" fill="#4285F4"/>
+                  </svg>
+                  <span>Google Play</span>
+                </a>
+                <!-- App Store -->
+                <a href="#" class="email-footer__app-btn">
+                  <svg width="12" height="14" viewBox="0 0 12 14" fill="none" aria-hidden="true">
+                    <path d="M9.5 7.5C9.5 5.8 10.5 4.5 12 4C11.3 3 10.2 2.5 9 2.5C7.8 2.5 7 3 6 3C5 3 4.2 2.5 3 2.5C1.3 2.5 0 3.8 0 5.8C0 9 2.5 13.5 4 13.5C4.7 13.5 5.3 13 6 13C6.7 13 7.3 13.5 8 13.5C9.5 13.5 12 9 12 7C10.8 7 9.5 7.5 9.5 7.5Z" fill="#555"/>
+                    <path d="M8 0.5C8 1.6 7.1 2.5 6 2.5C6 1.4 6.9 0.5 8 0.5Z" fill="#555"/>
+                  </svg>
+                  <span>App Store</span>
+                </a>
+              </div>
+            </div>
+            <div class="email-footer__social">
+              <p class="email-footer__social-hashtag">#LoMejorEstaLlegando</p>
+              <div class="email-footer__social-icons">
+                <!-- Facebook -->
+                <a href="#" class="email-footer__social-icon" aria-label="Facebook">
+                  <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+                    <path d="M6.5 6H8.5V3.5H6.5C5.1 3.5 4 4.6 4 6V7H2V9.5H4V18H6.5V9.5H8.5L9 7H6.5V6Z" fill="rgba(0,0,0,0.55)"/>
+                  </svg>
+                </a>
+                <!-- Twitter / X -->
+                <a href="#" class="email-footer__social-icon" aria-label="Twitter">
+                  <svg width="18" height="15" viewBox="0 0 18 15" fill="none">
+                    <path d="M17 1.5C16.3 2 15.6 2.3 14.8 2.5C14 1.6 12.8 1 11.5 1C9 1 7 3 7 5.5V6.5C4.5 6.5 2.2 5.3 0.8 3.5C0.8 3.5 -0.5 7 3 9C2.3 9 1.5 8.8 0.8 8.5C0.8 10.5 2.2 12.2 4 12.8C3.3 13 2.5 13 1.8 12.8C2.3 14.5 3.9 15.5 5.8 15.5C4.3 16.7 2.4 17.4 0.3 17.4H0C1.9 18.6 4.2 19.3 6.5 19.3C14.5 19.3 18.8 12.5 18.8 6.5V6C19.7 5.3 20.5 4.5 21 3.5C20.2 3.9 19.3 4.1 18.4 4.2C19.3 3.7 20 2.7 20.3 1.5" fill="rgba(0,0,0,0.55)"/>
+                  </svg>
+                </a>
+                <!-- YouTube -->
+                <a href="#" class="email-footer__social-icon" aria-label="YouTube">
+                  <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
+                    <path d="M17.5 2.5C17.3 1.7 16.7 1.1 15.9 0.9C14.5 0.5 9 0.5 9 0.5C9 0.5 3.5 0.5 2.1 0.9C1.3 1.1 0.7 1.7 0.5 2.5C0.1 3.9 0.1 7 0.1 7C0.1 7 0.1 10.1 0.5 11.5C0.7 12.3 1.3 12.9 2.1 13.1C3.5 13.5 9 13.5 9 13.5C9 13.5 14.5 13.5 15.9 13.1C16.7 12.9 17.3 12.3 17.5 11.5C17.9 10.1 17.9 7 17.9 7C17.9 7 17.9 3.9 17.5 2.5ZM7.2 10V4L12 7L7.2 10Z" fill="rgba(0,0,0,0.55)"/>
+                  </svg>
+                </a>
+                <!-- Instagram -->
+                <a href="#" class="email-footer__social-icon" aria-label="Instagram">
+                  <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                    <rect x="0.75" y="0.75" width="15.5" height="15.5" rx="4.25" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+                    <circle cx="8.5" cy="8.5" r="3.25" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+                    <circle cx="12.5" cy="4.5" r="0.75" fill="rgba(0,0,0,0.55)"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="email-footer__divider"></div>
+
+          <!-- Legal text -->
+          <p class="email-footer__legal">Textos legales phasellus imperdiet sit amet ligula id imperdiet. Duis porttitor turpis facilisis ullamcorper consectetur. Nulla tincidunt vel urna nec interdum. Vivamus ac dictum ante, eget posuere justo. Suspendisse potenti. Mauris egestas metus ipsum, eu gravida purus laoreet quis. Donec pretium ac odio luctus pretium.</p>
+
+          <!-- Opt-out row -->
+          <p class="email-footer__optout">Te enviamos este e-mail a {xxxx@xxxx.com} porque elegiste recibir información.</p>
+          <p class="email-footer__optout"><a href="#">Administrar preferencias de e-mails.</a></p>
+
+          <!-- Privacy row -->
+          <p class="email-footer__privacy">Conocé <a href="#">cómo cuidamos tu Privacidad</a> y visitá los <a href="#">Términos y Condiciones de Mercado Pago.</a></p>
+
+        </div>
+
+      </div>
+    </main>
+
+    <!-- VISTA PREVIA -->
+    <div class="preview-area">
+      <div class="vp-segmented">
+        <button class="vp-btn vp-btn--active" id="previewDesktop"
+                onclick="setPreview('desktop')" title="Vista Desktop"
+                aria-pressed="true">
+          <svg width="14" height="11" viewBox="0 0 14 11" fill="none" aria-hidden="true">
+            <rect x="0.75" y="0.75" width="12.5" height="8" rx="1.25" stroke="#FFFFFF" stroke-width="1.5"/>
+            <path d="M4 10.5h6M7 8.75V10.5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="vp-btn" id="previewMobile"
+                onclick="setPreview('mobile')" title="Vista Mobile"
+                aria-pressed="false">
+          <svg width="8" height="13" viewBox="0 0 8 13" fill="none" aria-hidden="true">
+            <rect x="0.75" y="0.75" width="6.5" height="11.5" rx="1.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+            <circle cx="4" cy="10.5" r="0.75" fill="rgba(0,0,0,0.55)"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <!-- GA_notification — Figma 29:4186 -->
+    <div class="ga-notification" id="GA_notification">
+      <span class="ga-notification__label">Guardando...</span>
+      <div class="ga-notification__spinner"></div>
+    </div>
+    <button class="btn btn--loud btn--disabled" disabled id="btnContinuar" onclick="window.location.href='Contenido Full.html'">Continuar</button>
+  </footer>
+
+
+  <!-- ALT-TEXT POPOVER — Figma 48:1325 -->
+  <div class="var-popover" id="varPopover">
+    <div class="var-popover__field">
+      <label class="var-popover__label" for="varAltInput">Texto alternativo</label>
+      <div class="var-popover__textarea">
+        <input class="var-popover__input" type="text" id="varAltInput"
+               oninput="onVarAltInput()" placeholder="">
+        <button class="var-popover__helper" tabindex="-1" title="Texto de reemplazo cuando la variable no tenga valor">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 8c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.5-1.3 1.8L10 10.5V12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="10" cy="14" r="0.75" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="var-popover__checkbox-row">
+      <input type="checkbox" id="varNoSend" class="var-popover__checkbox">
+      <label for="varNoSend" class="var-popover__checkbox-label">No enviar el mensaje cuando no se pueda completar la variable.</label>
+    </div>
+    <div>
+      <button class="var-popover__btn" id="varConfirmBtn" disabled
+              onmousedown="event.preventDefault()" onclick="closeVarPopover(true)">Confirmar</button>
+    </div>
+  </div>
+
+  <!-- FEEDBACK BAR — Figma 48:1364 -->
+  <div class="feedback-bar" id="feedbackBar">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10.5" stroke="#F23D4F" stroke-width="1.5"/>
+      <path d="M12 7v6" stroke="#F23D4F" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="12" cy="16.5" r="1" fill="#F23D4F"/>
+    </svg>
+    <span class="feedback-bar__text">Falta definir el texto alternativo de una o más variables.</span>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- VARIABLE MENU — Figma 37:1198 -->
+  <div class="var-menu" id="varMenu">
+    <div class="var-menu__search">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/>
+        <path d="M10.5 10.5L13.5 13.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input class="var-menu__search-input" type="text" placeholder="Buscar variable">
+    </div>
+    <div class="var-menu__option" onmousedown="event.preventDefault()" onclick="insertVariable('Payload.totalAmount')">Payload.totalAmount</div>
+    <div class="var-menu__group">Predefinidas</div>
+    <div class="var-menu__option" onmousedown="event.preventDefault()" onclick="insertVariable('Nombre')">Nombre</div>
+    <div class="var-menu__option" onmousedown="event.preventDefault()" onclick="insertVariable('Apellido')">Apellido</div>
+    <div class="var-menu__option" onmousedown="event.preventDefault()" onclick="insertVariable('Apodo')">Apodo</div>
+  </div>
+
+  <!-- FLOATING TOOLBAR — Figma 28:3635 | shown on texto selection -->
+  <div class="floating-toolbar" id="floatingToolbar">
+    <div class="ft-row">
+      <!-- Size -->
+      <button class="ft-btn" title="Tamaño de texto">
+        <span class="ft-size-label">S</span>
+      </button>
+      <!-- Divider -->
+      <div class="ft-divider"></div>
+      <!-- Color -->
+      <div class="ft-color" title="Color de texto"></div>
+      <!-- Format: B, I, U -->
+      <div class="ft-format-group">
+        <button class="ft-format-btn ft-format-btn--bold" id="ftBold" title="Negrita" onmousedown="event.preventDefault(); applyFormat('bold')">B</button>
+        <button class="ft-format-btn ft-format-btn--italic" id="ftItalic" title="Itálica" onmousedown="event.preventDefault(); applyFormat('italic')">I</button>
+        <button class="ft-format-btn ft-format-btn--underline" id="ftUnderline" title="Subrayado" onmousedown="event.preventDefault(); applyFormat('underline')">U</button>
+      </div>
+      <!-- Divider -->
+      <div class="ft-divider"></div>
+      <!-- Variable / lightning -->
+      <button class="ft-icon-btn" id="ftVariable" title="Variable" onmousedown="event.preventDefault(); toggleVariableMenu(event, this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M9.5 1.5L4 9h5.5L7 14.5l8-9H9.5l1-4h-1z" fill="rgba(0,0,0,0.9)"/>
+        </svg>
+      </button>
+      <!-- Link -->
+      <button class="ft-icon-btn" id="ftLink" title="Enlace" onmousedown="event.preventDefault(); applyLink()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M6.5 9.5a3.54 3.54 0 005 0l1.5-1.5a3.54 3.54 0 00-5-5L7 4" stroke="rgba(0,0,0,0.9)" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M9.5 6.5a3.54 3.54 0 00-5 0L3 8a3.54 3.54 0 005 5L9 12" stroke="rgba(0,0,0,0.9)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- DRAG GHOST -->
+  <div class="drag-ghost" id="dragGhost">
+    <div class="element-card" style="pointer-events:none; width:72px; height:78px;"></div>
+  </div>
+
+  <script>
+    // ── State ───────────────────────────────────────
+    var dragType = null;
+    var moduleCount = 0;
+    var _savedRange = null;          // saved selection range for variable insertion
+    var _lastInsertedStrong = null;  // <strong> element last inserted by insertVariable
+    var _varPopoverItem = null;      // filling-item that triggered the popover
+    var dropInsertIndex = -1;
+    var dropPlaceholder = null;
+    var moduleDropIndex = -1;
+    var modulePlaceholder = null;
+    var gaNotifTimer = null;
+
+    // ── Drop placeholder helpers ────────────────────
+    function getDropIndexInCard(card, clientY) {
+      var items = Array.prototype.slice.call(card.querySelectorAll('.filling-item'));
+      for (var i = 0; i < items.length; i++) {
+        var rect = items[i].getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return i;
+      }
+      return items.length;
+    }
+
+    function showPlaceholder(card, index) {
+      if (!dropPlaceholder) {
+        dropPlaceholder = document.createElement('div');
+        dropPlaceholder.className = 'drop-placeholder';
+      }
+      var items = Array.prototype.slice.call(card.querySelectorAll('.filling-item'));
+      var ref = index < items.length ? items[index] : null;
+      if (ref) { card.insertBefore(dropPlaceholder, ref); }
+      else      { card.appendChild(dropPlaceholder); }
+    }
+
+    function removePlaceholder() {
+      if (dropPlaceholder && dropPlaceholder.parentNode) {
+        dropPlaceholder.parentNode.removeChild(dropPlaceholder);
+      }
+      dropPlaceholder = null;
+      dropInsertIndex = -1;
+    }
+
+    // ── Tooltip walkthrough ─────────────────────────
+    function dismissTooltip() {
+      document.getElementById('tooltipWalkthrough').classList.add('hidden');
+    }
+
+    // ── Sidebar nav switch ──────────────────────────
+    function switchSidenav(el, id) {
+      document.querySelectorAll('.sidenav-item').forEach(function(item) {
+        item.classList.remove('sidenav-item--active');
+        item.classList.add('sidenav-item--inactive');
+        item.querySelector('.sidenav-item__label').style.color = 'rgba(0,0,0,0.55)';
+        var icon = item.querySelector('.sidenav-item__icon svg');
+        if (icon) { icon.querySelectorAll('[fill]').forEach(function(p){ p.setAttribute('fill','rgba(0,0,0,0.55)'); }); }
+      });
+      el.classList.remove('sidenav-item--inactive');
+      el.classList.add('sidenav-item--active');
+      el.querySelector('.sidenav-item__label').style.color = '#3483FA';
+      showToast('Vista ' + (id === 'legacy' ? 'Legacy' : 'Andes X') + ' activada');
+    }
+
+    // ── Vista previa toggle — Figma 15:5053 ─────────
+    function setPreview(mode) {
+      var canvas = document.getElementById('emailCanvas');
+      var btnDesktop = document.getElementById('previewDesktop');
+      var btnMobile  = document.getElementById('previewMobile');
+
+      // Iconos: stroke blanco cuando activo, gris cuando inactivo
+      var iconDesktop = btnDesktop.querySelector('svg');
+      var iconMobile  = btnMobile.querySelector('svg');
+
+      if (mode === 'mobile') {
+        canvas.style.width = '375px';
+        // Mobile activo
+        btnMobile.classList.add('vp-btn--active');
+        btnMobile.setAttribute('aria-pressed', 'true');
+        iconMobile.querySelectorAll('[stroke]').forEach(function(el){ el.setAttribute('stroke','#FFFFFF'); });
+        iconMobile.querySelectorAll('[fill]:not([fill="none"])').forEach(function(el){ el.setAttribute('fill','#FFFFFF'); });
+        // Desktop inactivo
+        btnDesktop.classList.remove('vp-btn--active');
+        btnDesktop.setAttribute('aria-pressed', 'false');
+        iconDesktop.querySelectorAll('[stroke]').forEach(function(el){ el.setAttribute('stroke','rgba(0,0,0,0.55)'); });
+        iconDesktop.querySelectorAll('[fill]:not([fill="none"])').forEach(function(el){ el.setAttribute('fill','rgba(0,0,0,0.55)'); });
+      } else {
+        canvas.style.width = '640px';
+        // Desktop activo
+        btnDesktop.classList.add('vp-btn--active');
+        btnDesktop.setAttribute('aria-pressed', 'true');
+        iconDesktop.querySelectorAll('[stroke]').forEach(function(el){ el.setAttribute('stroke','#FFFFFF'); });
+        iconDesktop.querySelectorAll('[fill]:not([fill="none"])').forEach(function(el){ el.setAttribute('fill','#FFFFFF'); });
+        // Mobile inactivo
+        btnMobile.classList.remove('vp-btn--active');
+        btnMobile.setAttribute('aria-pressed', 'false');
+        iconMobile.querySelectorAll('[stroke]').forEach(function(el){ el.setAttribute('stroke','rgba(0,0,0,0.55)'); });
+        iconMobile.querySelectorAll('[fill]:not([fill="none"])').forEach(function(el){ el.setAttribute('fill','rgba(0,0,0,0.55)'); });
+      }
+    }
+
+    // ── Drag & Drop ─────────────────────────────────
+    var CONTENT_TYPES = ['texto', 'imagen', 'divisor', 'boton', 'lista', 'html'];
+    var MODULE_TYPES  = ['header', 'seccion'];
+
+    function isContent(t) { return CONTENT_TYPES.indexOf(t) !== -1; }
+    function isModule(t)  { return MODULE_TYPES.indexOf(t) !== -1; }
+
+    function clearDropIndicators() {
+      var ec = document.getElementById('emptyCard');
+      ec.classList.remove('empty-card--drag-over');
+      ec.classList.remove('filling-card--drag-over');
+      var bw = document.querySelector('.email-body-wrapper');
+      if (bw) bw.classList.remove('module-drop-active');
+      removePlaceholder();
+      removeModulePlaceholder();
+    }
+
+    function getModuleDropIndex(container, clientY) {
+      var mods = Array.prototype.slice.call(container.querySelectorAll('.canvas-module'));
+      for (var i = 0; i < mods.length; i++) {
+        var rect = mods[i].getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return i;
+      }
+      return mods.length;
+    }
+    function showModulePlaceholder(container, index) {
+      if (!modulePlaceholder) {
+        modulePlaceholder = document.createElement('div');
+        modulePlaceholder.className = 'drop-placeholder';
+      }
+      var mods = Array.prototype.slice.call(container.querySelectorAll('.canvas-module'));
+      var ref = index < mods.length ? mods[index] : null;
+      if (ref) { container.insertBefore(modulePlaceholder, ref); }
+      else      { container.appendChild(modulePlaceholder); }
+    }
+    function removeModulePlaceholder() {
+      if (modulePlaceholder && modulePlaceholder.parentNode) {
+        modulePlaceholder.parentNode.removeChild(modulePlaceholder);
+      }
+      modulePlaceholder = null;
+      moduleDropIndex = -1;
+    }
+
+    function onDragStart(e) {
+      dragType = e.currentTarget.dataset.type;
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/plain', dragType);
+      // Both classes in the same tick: browser captures ghost before they apply,
+      // and is-dragging + --dragging are always set together so the dragging card
+      // is never caught by the pointer-events:none rule
+      var card = e.currentTarget;
+      setTimeout(function() {
+        card.classList.add('element-card--dragging');
+        document.body.classList.add('is-dragging');
+      }, 0);
+    }
+
+    function onDragEnd(e) {
+      e.currentTarget.classList.remove('element-card--dragging');
+      document.body.classList.remove('is-dragging');
+      dragType = null;
+      clearDropIndicators();
+    }
+
+    // Canvas-area: shows indicator at first valid position as soon as drag enters
+    function onDragOver(e) {
+      if (!dragType) return;
+      var emptyCard = document.getElementById('emptyCard');
+
+      if (isContent(dragType)) {
+        // imagen dragged outside filling-card → treat as module-level drop
+        if (dragType === 'imagen' && !e.target.closest('.empty-card, .filling-card')) {
+          e.preventDefault();
+          var bw = document.querySelector('.email-body-wrapper');
+          if (bw) bw.classList.add('module-drop-active');
+          emptyCard.classList.remove('empty-card--drag-over');
+          var cont = document.getElementById('modulesContainer');
+          if (cont && cont.querySelectorAll('.canvas-module').length > 0) {
+            var idx = getModuleDropIndex(cont, e.clientY);
+            if (idx !== moduleDropIndex) {
+              moduleDropIndex = idx;
+              showModulePlaceholder(cont, idx);
+            }
+          }
+        } else if (emptyCard.classList.contains('empty-card')) {
+          e.preventDefault();
+          emptyCard.classList.add('empty-card--drag-over');
+        } else if (emptyCard.classList.contains('filling-card')) {
+          e.preventDefault();
+          emptyCard.classList.add('filling-card--drag-over');
+        }
+      } else if (dragType === 'header') {
+        // Header: solo se puede soltar sobre emptyCard / filling-card
+        e.preventDefault();
+        emptyCard.classList.add('empty-card--drag-over');
+      } else if (isModule(dragType)) {
+        e.preventDefault();
+        var bw = document.querySelector('.email-body-wrapper');
+        if (bw) bw.classList.add('module-drop-active');
+        emptyCard.classList.remove('empty-card--drag-over');
+        var cont = document.getElementById('modulesContainer');
+        if (cont && cont.querySelectorAll('.canvas-module').length > 0) {
+          var idx = getModuleDropIndex(cont, e.clientY);
+          if (idx !== moduleDropIndex) {
+            moduleDropIndex = idx;
+            showModulePlaceholder(cont, idx);
+          }
+        }
+      }
+    }
+
+    function onDragLeave(e) {
+      // Only clear indicators when truly leaving canvas area (not entering a child)
+      var canvasArea = document.getElementById('canvasArea');
+      if (e.relatedTarget && canvasArea.contains(e.relatedTarget)) return;
+      clearDropIndicators();
+    }
+
+    function onDrop(e) {
+      e.preventDefault();
+      if (!dragType) return;
+      var emptyCard = document.getElementById('emptyCard');
+      // imagen dropped outside filling-card → create mod-seccion with imagen inside
+      if (dragType === 'imagen' && !e.target.closest('.empty-card, .filling-card')) {
+        addImagenAsSeccion();
+        showGANotification();
+        clearDropIndicators();
+        return;
+      }
+      var acceptContent = isContent(dragType) &&
+        (emptyCard.classList.contains('empty-card') || emptyCard.classList.contains('filling-card'));
+      var dropped = false;
+      if (acceptContent) {
+        addModule(dragType);
+        dropped = true;
+      } else if (dragType === 'header') {
+        addHeaderModule();
+        dropped = true;
+      } else if (isModule(dragType)) {
+        addModule(dragType);
+        dropped = true;
+      }
+      if (dropped) showGANotification();
+      clearDropIndicators();
+    }
+
+    function addImagenAsSeccion() {
+      moduleCount++;
+      var container = document.getElementById('modulesContainer');
+      container.style.display = 'block';
+      // Build canvas-module with mod-seccion (filled, not empty state)
+      var wrapper = document.createElement('div');
+      wrapper.innerHTML = '<div class="canvas-module" data-module-id="' + moduleCount + '">' +
+        buildSeccionActionBar() +
+        '<div class="mod-seccion"' +
+        ' onclick="selectSeccion(event, this)"' +
+        ' ondragover="onSeccionDragOver(event, this)"' +
+        ' ondragleave="onSeccionDragLeave(event, this)"' +
+        ' ondrop="onSeccionDrop(event, this)">' +
+        '</div></div>';
+      var mod = wrapper.firstElementChild;
+      var existingMods = container.querySelectorAll('.canvas-module');
+      if (moduleDropIndex >= 0 && moduleDropIndex < existingMods.length) {
+        container.insertBefore(mod, existingMods[moduleDropIndex]);
+      } else {
+        container.appendChild(mod);
+      }
+      moduleDropIndex = -1;
+      // Insert imagen filling-item inside the new seccion
+      var seccion = mod.querySelector('.mod-seccion');
+      createFillingItems('imagen').forEach(function(it) { seccion.appendChild(it); });
+      // Enable buttons if no empty secciones remain
+      updateContinuarState();
+      updateActionBarStates();
+      updateSidenavState();
+    }
+
+    // emptyCard: secondary handlers for precision (content types only)
+    function onCardDragOver(e) {
+      if (!dragType || (!isContent(dragType) && dragType !== 'header')) return;
+      var ec = document.getElementById('emptyCard');
+      var isEmpty = ec.classList.contains('empty-card');
+      var isFilling = ec.classList.contains('filling-card');
+      if (!isEmpty && !isFilling) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (dragType === 'header') {
+        // Header siempre va antes del emptyCard — indicador simple
+        ec.classList.add('empty-card--drag-over');
+      } else if (isEmpty) {
+        ec.classList.add('empty-card--drag-over');
+      } else {
+        // Filling-card: show placeholder at computed insert position
+        var idx = getDropIndexInCard(ec, e.clientY);
+        if (idx !== dropInsertIndex) {
+          dropInsertIndex = idx;
+          showPlaceholder(ec, idx);
+        }
+      }
+    }
+
+    function onCardDragLeave(e) {
+      var ec = document.getElementById('emptyCard');
+      if (ec.contains(e.relatedTarget)) return;
+      ec.classList.remove('empty-card--drag-over');
+      removePlaceholder();
+    }
+
+    function onCardDrop(e) {
+      var ec = document.getElementById('emptyCard');
+      var isEmpty = ec.classList.contains('empty-card');
+      var isFilling = ec.classList.contains('filling-card');
+      if (!dragType || (!isEmpty && !isFilling)) return;
+      if (!isContent(dragType) && dragType !== 'header') return;
+      e.preventDefault();
+      e.stopPropagation();
+      ec.classList.remove('empty-card--drag-over');
+      removePlaceholder();
+      if (dragType === 'header') {
+        addHeaderModule();
+      } else {
+        var idx = dropInsertIndex;
+        addModule(dragType, isFilling ? idx : -1);
+      }
+      showGANotification();
+    }
+
+
+    // ── Insertar Header como email-header-item antes del emptyCard ──
+    function addHeaderModule() {
+      if (document.getElementById('canvasArea').querySelector('.email-header-module')) {
+        showToast('Solo se permite un Header por email');
+        return;
+      }
+      var svgCheck =
+        '<svg width="12" height="12" viewBox="0 0 12 12" fill="none">' +
+        '<path d="M2.5 6l2.5 2.5 4.5-5" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      var svgTrash =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '</svg>';
+      var el = document.createElement('div');
+      el.className = 'email-header-item';
+      el.setAttribute('onclick', 'selectHeaderItem(event, this)');
+      el.innerHTML =
+        '<div class="email-header-module">' +
+          '<div class="email-header-module__left">' +
+            '<div class="email-header-module__title">' +
+              '<span class="icon-positive" aria-hidden="true">' + svgCheck + '</span>' +
+              '<span contenteditable="true" onclick="event.stopPropagation()" style="outline:none;min-width:4px;">E-mail title</span>' +
+            '</div>' +
+            '<div class="email-header-module__subtitle" contenteditable="true" onclick="event.stopPropagation()" style="outline:none;min-width:4px;">Subtitle</div>' +
+          '</div>' +
+          '<div class="email-header-module__thumb"><div class="thumb-checker"></div></div>' +
+        '</div>' +
+        '<div class="action-bar" onclick="event.stopPropagation()">' +
+          '<button class="action-bar__btn action-bar__btn--delete" onclick="removeHeaderItem(this)" title="Eliminar">' + svgTrash + '</button>' +
+        '</div>';
+      var bw = document.querySelector('.email-body-wrapper');
+      var emptyCard = document.getElementById('emptyCard');
+      bw.insertBefore(el, emptyCard);
+      var btnContinuar = document.getElementById('btnContinuar');
+      btnContinuar.classList.remove('btn--disabled');
+      btnContinuar.disabled = false;
+      var btnGuardar = document.getElementById('btnGuardar');
+      if (btnGuardar) { btnGuardar.classList.remove('btn--disabled'); btnGuardar.disabled = false; }
+      updateSidenavState();
+    }
+
+    // ── Add module to canvas ─────────────────────────
+    // insertIndex: position inside filling-card (-1 = append at end)
+    function addModule(type, insertIndex) {
+      moduleCount++;
+      var container = document.getElementById('modulesContainer');
+      var emptyCard = document.getElementById('emptyCard');
+      var btnContinuar = document.getElementById('btnContinuar');
+      var btnGuardar = document.getElementById('btnGuardar');
+
+      if (isContent(type)) {
+        var newItems = createFillingItems(type);
+        if (emptyCard.classList.contains('filling-card')) {
+          // Append or insert at position inside existing filling-card
+          var items = emptyCard.querySelectorAll('.filling-item');
+          var refNode = (insertIndex !== undefined && insertIndex >= 0 && insertIndex < items.length) ? items[insertIndex] : null;
+          newItems.forEach(function(it) {
+            if (refNode) { emptyCard.insertBefore(it, refNode); }
+            else         { emptyCard.appendChild(it); }
+          });
+        } else {
+          // First drop: transform emptyCard → filling-card
+          emptyCard.classList.remove('empty-card');
+          emptyCard.classList.add('filling-card');
+          emptyCard.innerHTML = '';
+          newItems.forEach(function(it) { emptyCard.appendChild(it); });
+        }
+        updateActionBarStates();
+      } else {
+        // Module type (header, seccion) → append to modulesContainer
+        if (type === 'header' && document.getElementById('canvasArea').querySelector('.email-header-module')) {
+          showToast('Solo se permite un Header por email');
+          moduleCount--;
+          return;
+        }
+        container.style.display = 'block';
+        var html = buildModule(type, moduleCount);
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        var mod = wrapper.firstElementChild;
+        var existingMods = container.querySelectorAll('.canvas-module');
+        if (moduleDropIndex >= 0 && moduleDropIndex < existingMods.length) {
+          container.insertBefore(mod, existingMods[moduleDropIndex]);
+        } else {
+          container.appendChild(mod);
+        }
+        moduleDropIndex = -1;
+        mod.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Enable guardar; continuar depends on empty secciones
+      if (btnGuardar) {
+        btnGuardar.classList.remove('btn--disabled');
+        btnGuardar.disabled = false;
+      }
+
+      updateSidenavState();
+      updateContinuarState();
+    }
+
+    // Returns array of filling-item DOM nodes for a given type
+    function createFillingItems(type) {
+      if (type === 'texto') {
+        var titleItem = document.createElement('div');
+        titleItem.className = 'filling-item';
+        titleItem.setAttribute('onclick', 'selectFillingItem(event, this)');
+        titleItem.innerHTML = '<p class="mod-texto__title" contenteditable="true">Card title</p>' + buildActionBar();
+
+        var bodyItem = document.createElement('div');
+        bodyItem.className = 'filling-item';
+        bodyItem.setAttribute('onclick', 'selectFillingItem(event, this)');
+        bodyItem.innerHTML = '<p class="mod-texto__body" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam.</p>' + buildActionBar();
+
+        return [titleItem, bodyItem];
+      }
+      var item = document.createElement('div');
+      item.className = 'filling-item';
+      item.setAttribute('onclick', 'selectFillingItem(event, this)');
+      item.innerHTML = buildModuleInner(type) + buildActionBar();
+      return [item];
+    }
+
+    // Inner content only — no canvas-module wrapper (goes inside filling-card)
+    function buildModuleInner(type) {
+      var svgImg = '<svg width="32" height="32" viewBox="0 0 32 32" fill="none">' +
+        '<rect x="2" y="2" width="28" height="28" rx="4" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/>' +
+        '<circle cx="10.5" cy="10.5" r="2.5" fill="rgba(0,0,0,0.25)"/>' +
+        '<path d="M2 22l8-8 6 6 4-4 10 10" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      switch(type) {
+        case 'texto':
+          return '<div class="mod-texto">' +
+            '<p class="mod-texto__title" contenteditable="true">Card title</p>' +
+            '<p class="mod-texto__body" contenteditable="true">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam.</p>' +
+            '</div>';
+        case 'imagen':
+          return '<div class="mod-imagen"><div class="mod-imagen__placeholder">' + svgImg + '<span>Subí o arrastrá una imagen aquí</span></div></div>';
+        case 'divisor':
+          return '<div class="mod-divisor"><div class="mod-divisor__line"></div></div>';
+        case 'boton':
+          return '<div class="mod-boton"><button class="mod-boton__btn" contenteditable="true">Llamada a la acción</button></div>';
+        case 'lista':
+          return '<div class="mod-lista">' +
+            '<p class="mod-lista__title" contenteditable="true">Card title</p>' +
+            '<div class="mod-lista__rows">' +
+            '<div class="mod-lista__row"><div class="mod-lista__icon"></div><div class="mod-lista__row-text"><span class="mod-lista__row-title" contenteditable="true">Row title</span><span class="mod-lista__row-desc" contenteditable="true">Row description</span></div></div>' +
+            '<div class="mod-lista__row"><div class="mod-lista__icon"></div><div class="mod-lista__row-text"><span class="mod-lista__row-title" contenteditable="true">Row title</span><span class="mod-lista__row-desc" contenteditable="true">Row description</span></div></div>' +
+            '<div class="mod-lista__row"><div class="mod-lista__icon"></div><div class="mod-lista__row-text"><span class="mod-lista__row-title" contenteditable="true">Row title</span><span class="mod-lista__row-desc" contenteditable="true">Row description</span></div></div>' +
+            '</div></div>';
+        case 'html':
+          return '<div class="mod-html"><div class="mod-html__code">&lt;!-- Tu HTML personalizado --&gt;\n&lt;p style="color: #3483FA;"&gt;Contenido HTML&lt;/p&gt;</div></div>';
+        default: return '';
+      }
+    }
+
+    // Restore emptyCard from filling-card state
+    function clearFillingCard() {
+      var card = document.getElementById('emptyCard');
+      card.classList.remove('filling-card');
+      card.classList.add('empty-card');
+      card.innerHTML =
+        '<div class="empty-state" id="emptyState">' +
+        '<img src="Empty_state_image.png" alt="" class="empty-state__img" aria-hidden="true">' +
+        '<p class="empty-state__text">Arrastra elementos desde el panel lateral o haz clic en ellos para añadirlos a tu plantilla</p>' +
+        '</div>';
+      // Disable buttons only if modulesContainer is also empty
+      var container = document.getElementById('modulesContainer');
+      if (container.children.length === 0) {
+        var btnContinuar = document.getElementById('btnContinuar');
+        btnContinuar.classList.add('btn--disabled');
+        btnContinuar.disabled = true;
+        var btnGuardar = document.getElementById('btnGuardar');
+        if (btnGuardar) { btnGuardar.classList.add('btn--disabled'); btnGuardar.disabled = true; }
+      }
+      updateSidenavState();
+    }
+
+    // ── Sección module action bar (delete + up + down, no X button) ─
+    function buildSeccionActionBar() {
+      var svgTrash =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '</svg>';
+      var svgUp =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M8 14V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      var svgDown =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M8 2v10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      return '<div class="action-bar seccion-action-bar" onclick="event.stopPropagation()">' +
+        '<button class="action-bar__btn action-bar__btn--delete" onclick="removeModule(this)" title="Eliminar">' + svgTrash + '</button>' +
+        '<button class="action-bar__btn action-bar__btn--up" onclick="moveModuleUp(this)" title="Mover arriba">' + svgUp + '</button>' +
+        '<button class="action-bar__btn action-bar__btn--down" onclick="moveModuleDown(this)" title="Mover abajo">' + svgDown + '</button>' +
+        '</div>';
+    }
+
+    // Select a mod-seccion (seccion = the mod-seccion div)
+    function selectSeccion(e, seccion) {
+      if (e.target.closest('.filling-item') || e.target.closest('.seccion-action-bar')) return;
+      e.stopPropagation();
+      var canvasMod = seccion.closest('.canvas-module');
+      var isActive = seccion.classList.contains('mod-seccion--active');
+      // Deselect all
+      document.querySelectorAll('.mod-seccion--active').forEach(function(s) {
+        s.classList.remove('mod-seccion--active');
+      });
+      document.querySelectorAll('.canvas-module--active').forEach(function(m) {
+        m.classList.remove('canvas-module--active');
+      });
+      closeAllActionBars();
+      if (!isActive) {
+        seccion.classList.add('mod-seccion--active');
+        canvasMod.classList.add('canvas-module--active');
+        positionSeccionActionBar(canvasMod);
+      }
+    }
+
+    function positionSeccionActionBar(mod) {
+      var bar = mod.querySelector('.seccion-action-bar');
+      if (!bar) return;
+      var rect = mod.getBoundingClientRect();
+      bar.style.top  = rect.top + 'px';
+      bar.style.left = (rect.right + 32) + 'px';
+    }
+
+    function moveModuleUp(btn) {
+      var mod = btn.closest('.canvas-module');
+      var prev = mod.previousElementSibling;
+      if (prev && prev.classList.contains('canvas-module')) {
+        mod.parentNode.insertBefore(mod, prev);
+        positionSeccionActionBar(mod);
+      }
+    }
+
+    function moveModuleDown(btn) {
+      var mod = btn.closest('.canvas-module');
+      var next = mod.nextElementSibling;
+      if (next && next.classList.contains('canvas-module')) {
+        mod.parentNode.insertBefore(next, mod);
+        positionSeccionActionBar(mod);
+      }
+    }
+
+    // ── Action bar HTML builder — icons matched to Figma 24:797 ─
+    function buildActionBar() {
+      // Delete — trash can: lid bar + handle bump + body + 2 internal lines
+      var svgTrash =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M6.5 3h3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M2.5 5h11" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4 5l.8 7a1 1 0 001 .9h4.4a1 1 0 001-.9L12 5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path d="M6.5 7.5v3M9.5 7.5v3" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '</svg>';
+      // Copy — back rect (top-right) + front rect (bottom-left), white fill on front
+      var svgCopy =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<rect x="5" y="2" width="8.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.25"/>' +
+        '<rect x="2.5" y="5.5" width="8.5" height="8.5" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.25"/>' +
+        '</svg>';
+      // Arrow Up — vertical shaft + upward chevron head
+      var svgUp =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M8 14V4" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      // Arrow Down — vertical shaft + downward chevron head
+      var svgDown =
+        '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">' +
+        '<path d="M8 2v10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/>' +
+        '<path d="M4.5 8.5L8 12l3.5-3.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '</svg>';
+      return '<div class="action-bar" onclick="event.stopPropagation()">' +
+        '<button class="action-bar__btn action-bar__btn--delete" onclick="removeFillingItem(this)" title="Eliminar">' + svgTrash + '</button>' +
+        '<button class="action-bar__btn action-bar__btn--copy" onclick="copyFillingItem(this)" title="Copiar">' + svgCopy + '</button>' +
+        '<button class="action-bar__btn action-bar__btn--up" onclick="moveFillingItemUp(this)" title="Mover arriba">' + svgUp + '</button>' +
+        '<button class="action-bar__btn action-bar__btn--down" onclick="moveFillingItemDown(this)" title="Mover abajo">' + svgDown + '</button>' +
+        '</div>';
+    }
+
+    // Remove a single item; if last one, revert filling-card → emptyCard
+    function removeFillingItem(btn) {
+      var item = btn.closest('.filling-item');
+      var seccion = item.closest('.mod-seccion');
+      var card = document.getElementById('emptyCard');
+      item.remove();
+      hideFloatingToolbar();
+      closeContextPanel();
+      if (seccion) {
+        // Item was inside a sección — if empty, restore empty state
+        if (seccion.querySelectorAll('.filling-item').length === 0) {
+          seccion.classList.add('mod-seccion--empty');
+          seccion.innerHTML =
+            '<div class="empty-state">' +
+            '<img src="Empty_state_image.png" alt="" class="empty-state__img" aria-hidden="true">' +
+            '<p class="empty-state__text">Arrastra elementos desde el panel lateral o haz clic en ellos para añadirlos a tu plantilla</p>' +
+            '</div>';
+        }
+        updateActionBarStates();
+        updateSidenavState();
+        updateContinuarState();
+      } else {
+        var remaining = card.querySelectorAll('.filling-item');
+        if (remaining.length === 0) {
+          clearFillingCard();
+        } else {
+          updateActionBarStates();
+          updateSidenavState();
+        }
+      }
+    }
+
+    // Clone item and insert right after it
+    function copyFillingItem(btn) {
+      var item = btn.closest('.filling-item');
+      var clone = item.cloneNode(true);
+      clone.classList.remove('filling-item--active');
+      item.parentNode.insertBefore(clone, item.nextSibling);
+      updateActionBarStates();
+      showToast('Elemento copiado');
+    }
+
+    // Swap item with the one above it
+    function moveFillingItemUp(btn) {
+      var item = btn.closest('.filling-item');
+      var prev = item.previousElementSibling;
+      if (prev && prev.classList.contains('filling-item')) {
+        item.parentNode.insertBefore(item, prev);
+        updateActionBarStates();
+        item.classList.add('filling-item--active');
+        positionActionBar(item);
+      }
+    }
+
+    // Swap item with the one below it
+    function moveFillingItemDown(btn) {
+      var item = btn.closest('.filling-item');
+      var next = item.nextElementSibling;
+      if (next && next.classList.contains('filling-item')) {
+        item.parentNode.insertBefore(next, item);
+        updateActionBarStates();
+        item.classList.add('filling-item--active');
+        positionActionBar(item);
+      }
+    }
+
+    // Disable ↑ on first item and ↓ on last item (emptyCard + secciones)
+    function updateActionBarStates() {
+      // emptyCard items
+      var card = document.getElementById('emptyCard');
+      var items = Array.prototype.slice.call(card.querySelectorAll(':scope > .filling-item'));
+      items.forEach(function(item, i) {
+        var btnUp   = item.querySelector('.action-bar__btn--up');
+        var btnDown = item.querySelector('.action-bar__btn--down');
+        if (btnUp)   btnUp.disabled   = (i === 0);
+        if (btnDown) btnDown.disabled = (i === items.length - 1);
+      });
+      // sección items (each sección is independent)
+      document.querySelectorAll('.mod-seccion:not(.mod-seccion--empty)').forEach(function(sec) {
+        var secItems = Array.prototype.slice.call(sec.querySelectorAll(':scope > .filling-item'));
+        secItems.forEach(function(item, i) {
+          var btnUp   = item.querySelector('.action-bar__btn--up');
+          var btnDown = item.querySelector('.action-bar__btn--down');
+          if (btnUp)   btnUp.disabled   = (i === 0);
+          if (btnDown) btnDown.disabled = (i === secItems.length - 1);
+        });
+      });
+    }
+
+    // Position action bar relative to viewport (floating / fixed)
+    function positionActionBar(item) {
+      var actionBar = item.querySelector('.action-bar');
+      if (!actionBar) return;
+      var rect = item.getBoundingClientRect();
+      actionBar.style.top  = rect.top + 'px';
+      actionBar.style.left = (rect.right + 32) + 'px';
+    }
+
+    // Position floating toolbar 12px above the item, left-aligned
+    function positionFloatingToolbar(item) {
+      var toolbar = document.getElementById('floatingToolbar');
+      var rect = item.getBoundingClientRect();
+      toolbar.style.left = rect.left + 'px';
+      // Temporarily show to measure height, then position
+      toolbar.style.visibility = 'hidden';
+      toolbar.classList.add('visible');
+      toolbar.style.top = (rect.top - toolbar.offsetHeight - 12) + 'px';
+      toolbar.style.visibility = '';
+    }
+
+    function hideFloatingToolbar() {
+      document.getElementById('floatingToolbar').classList.remove('visible');
+    }
+
+    function applyFormat(cmd) {
+      document.execCommand(cmd, false, null);
+      updateFormatState();
+    }
+
+    function updateFormatState() {
+      var bold      = document.getElementById('ftBold');
+      var italic    = document.getElementById('ftItalic');
+      var underline = document.getElementById('ftUnderline');
+      if (!bold) return;
+      bold.classList.toggle('ft-format-btn--active',      document.queryCommandState('bold'));
+      italic.classList.toggle('ft-format-btn--active',    document.queryCommandState('italic'));
+      underline.classList.toggle('ft-format-btn--active', document.queryCommandState('underline'));
+    }
+
+    function applyLink() {
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed) return;
+      var url = prompt('URL del enlace:');
+      if (url) document.execCommand('createLink', false, url);
+    }
+
+    document.addEventListener('selectionchange', function() {
+      if (document.getElementById('floatingToolbar').classList.contains('visible')) {
+        updateFormatState();
+      }
+    });
+
+    // Click on filling-item to select/deselect its action bar
+    function selectFillingItem(e, item) {
+      // If item is already active and the click landed on a contenteditable — let editing happen
+      if (item.classList.contains('filling-item--active') &&
+          e.target.getAttribute('contenteditable') === 'true') {
+        return;
+      }
+      var isActive = item.classList.contains('filling-item--active');
+      closeAllActionBars();
+      if (!isActive) {
+        item.classList.add('filling-item--active');
+        positionActionBar(item);
+        if (item.querySelector('.mod-texto__title, .mod-texto__body')) {
+          positionFloatingToolbar(item);
+        }
+        openContextPanel(item);
+      }
+    }
+
+    // Click on email-header-item to select/deselect its action bar
+    function selectHeaderItem(e, item) {
+      var isActive = item.classList.contains('email-header-item--active');
+      closeAllActionBars();
+      if (!isActive) {
+        item.classList.add('email-header-item--active');
+        positionActionBar(item);
+        openContextPanel(item);
+      }
+    }
+
+    // Remove the email-header-item from the canvas
+    function removeHeaderItem(btn) {
+      var item = btn.closest('.email-header-item');
+      item.remove();
+      closeContextPanel();
+      updateSidenavState();
+    }
+
+    function closeAllActionBars() {
+      document.querySelectorAll('.filling-item--active').forEach(function(el) {
+        el.classList.remove('filling-item--active');
+      });
+      document.querySelectorAll('.email-header-item--active').forEach(function(el) {
+        el.classList.remove('email-header-item--active');
+      });
+      document.querySelectorAll('.canvas-module--active').forEach(function(el) {
+        el.classList.remove('canvas-module--active');
+      });
+      document.querySelectorAll('.mod-seccion--active').forEach(function(el) {
+        el.classList.remove('mod-seccion--active');
+      });
+      hideFloatingToolbar();
+      closeContextPanel();
+    }
+
+    // Click outside selectable items closes all action bars
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.filling-item') && !e.target.closest('.email-header-item')) {
+        closeAllActionBars();
+      }
+    });
+
+    function getLabelForType(type) {
+      var labels = {
+        header: 'Header',
+        seccion: 'Sección',
+        texto: 'Texto',
+        imagen: 'Imagen',
+        divisor: 'Divisor',
+        boton: 'Botón',
+        lista: 'Lista',
+        html: 'HTML'
+      };
+      return labels[type] || type;
+    }
+
+    function buildModule(type, id) {
+      var deleteBtn = '<button class="canvas-module__delete" onclick="removeModule(this)" title="Eliminar módulo">' +
+        '<svg width="12" height="12" viewBox="0 0 12 12" fill="none">' +
+        '<path d="M2 2l8 8M10 2l-8 8" stroke="rgba(0,0,0,0.55)" stroke-width="1.5" stroke-linecap="round"/>' +
+        '</svg></button>';
+
+      switch(type) {
+        case 'header':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="email-header-module">' +
+            '<div class="email-header-module__left">' +
+            '<div class="email-header-module__title">Título del módulo</div>' +
+            '<div class="email-header-module__subtitle">Subtítulo descriptivo</div>' +
+            '</div>' +
+            '<div class="email-header-module__thumb"><div class="thumb-checker"></div></div>' +
+            '</div></div>';
+
+        case 'seccion':
+          return '<div class="canvas-module" data-module-id="' + id + '">' +
+            buildSeccionActionBar() +
+            '<div class="mod-seccion mod-seccion--empty"' +
+            ' onclick="selectSeccion(event, this)"' +
+            ' ondragover="onSeccionDragOver(event, this)"' +
+            ' ondragleave="onSeccionDragLeave(event, this)"' +
+            ' ondrop="onSeccionDrop(event, this)">' +
+            '<div class="empty-state">' +
+            '<img src="Empty_state_image.png" alt="" class="empty-state__img" aria-hidden="true">' +
+            '<p class="empty-state__text">Arrastra elementos desde el panel lateral o haz clic en ellos para añadirlos a tu plantilla</p>' +
+            '</div>' +
+            '</div></div>';
+
+        case 'texto':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-texto">' +
+            '<p>Escribí aquí el texto de tu comunicación. Podés incluir información relevante para tus usuarios como promociones, novedades o recordatorios.</p>' +
+            '</div></div>';
+
+        case 'imagen':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-imagen">' +
+            '<div class="mod-imagen__placeholder">' +
+            '<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="4" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/><circle cx="10.5" cy="10.5" r="2.5" fill="rgba(0,0,0,0.25)"/><path d="M2 22l8-8 6 6 4-4 10 10" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+            '<span>Subí o arrastrá una imagen aquí</span>' +
+            '</div></div></div>';
+
+        case 'divisor':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-divisor"><div class="mod-divisor__line"></div></div></div>';
+
+        case 'boton':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-boton"><button class="mod-boton__btn">Llamada a la acción</button></div></div>';
+
+        case 'lista':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-lista"><ul>' +
+            '<li>Ítem de lista 1</li>' +
+            '<li>Ítem de lista 2</li>' +
+            '<li>Ítem de lista 3</li>' +
+            '</ul></div></div>';
+
+        case 'html':
+          return '<div class="canvas-module" data-module-id="' + id + '">' + deleteBtn +
+            '<div class="mod-html">' +
+            '<div class="mod-html__code">&lt;!-- Tu HTML personalizado --&gt;\n&lt;p style="color: #3483FA;"&gt;Contenido HTML&lt;/p&gt;</div>' +
+            '</div></div>';
+
+        default:
+          return '';
+      }
+    }
+
+    function removeModule(btn) {
+      var mod = btn.closest('.canvas-module');
+      mod.style.transition = 'opacity 0.15s';
+      mod.style.opacity = '0';
+      setTimeout(function() {
+        mod.remove();
+        var container = document.getElementById('modulesContainer');
+        var emptyCard = document.getElementById('emptyCard');
+        if (container.children.length === 0) {
+          container.style.display = 'none';
+        }
+        // Disable buttons only if no modules AND no content in filling-card
+        if (container.children.length === 0 && emptyCard.classList.contains('empty-card')) {
+          var btnContinuar = document.getElementById('btnContinuar');
+          btnContinuar.classList.add('btn--disabled');
+          btnContinuar.disabled = true;
+          var btnGuardar = document.getElementById('btnGuardar');
+          if (btnGuardar) { btnGuardar.classList.add('btn--disabled'); btnGuardar.disabled = true; }
+        }
+        closeContextPanel();
+        updateSidenavState();
+      }, 150);
+    }
+
+    // ── Descargar HTML ───────────────────────────────
+    function handleDownload() {
+      var content = document.getElementById('emailCanvas').innerHTML;
+      var blob = new Blob(['<!DOCTYPE html><html><body>' + content + '</body></html>'], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'email-template.html';
+      a.click();
+      showToast('HTML descargado');
+    }
+
+    // ── Toast ────────────────────────────────────────
+    function showToast(msg) {
+      var toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(function() {
+        toast.classList.remove('show');
+      }, 2200);
+    }
+
+    // ── Variable Menu — Figma 37:1198 ───────────────
+    function toggleVariableMenu(e, btn) {
+      e.stopPropagation();
+      var menu = document.getElementById('varMenu');
+      if (menu.classList.contains('open')) {
+        menu.classList.remove('open');
+        btn.classList.remove('ft-icon-btn--active');
+        return;
+      }
+      // Save current selection so it can be restored after menu click steals focus
+      var sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        var r = sel.getRangeAt(0);
+        var container = r.commonAncestorContainer;
+        var el = container.nodeType === 3 ? container.parentElement : container;
+        if (el.closest && el.closest('.mod-texto__title, .mod-texto__body')) {
+          _savedRange = r.cloneRange();
+        }
+      }
+      var toolbar = document.getElementById('floatingToolbar');
+      var tbRect = toolbar.getBoundingClientRect();
+      menu.classList.add('open');
+      btn.classList.add('ft-icon-btn--active');
+      menu.style.left = tbRect.left + 'px';
+      menu.style.top  = (tbRect.bottom + 4) + 'px';
+    }
+    function insertVariable(value) {
+      var menu = document.getElementById('varMenu');
+      menu.classList.remove('open');
+      var btn = document.getElementById('ftVariable');
+      if (btn) btn.classList.remove('ft-icon-btn--active');
+
+      // Use saved range (set when varMenu opened) to target the correct texto element
+      var range = _savedRange;
+      _savedRange = null;
+      if (!range) {
+        var sel = window.getSelection();
+        if (sel && sel.rangeCount) range = sel.getRangeAt(0);
+      }
+      if (!range) return;
+
+      // Verify range is inside a mod-texto__title or mod-texto__body
+      var container = range.commonAncestorContainer;
+      var el = container.nodeType === 3 ? container.parentElement : container;
+      var textoEl = el.closest ? el.closest('.mod-texto__title, .mod-texto__body') : null;
+      if (!textoEl) return;
+
+      // Restore the selection to the saved range and insert the variable
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      range.deleteContents();
+      var strong = document.createElement('strong');
+      strong.textContent = value;
+      range.insertNode(strong);
+      range.setStartAfter(strong);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      // Show alt-text popover below the active filling-item
+      _lastInsertedStrong = strong;
+      var activeItem = document.querySelector('.filling-item--active');
+      if (activeItem) showVarPopover(activeItem);
+    }
+    // ── Alt-text popover ──────────────────────────
+    function showVarPopover(item) {
+      _varPopoverItem = item;
+      var popover = document.getElementById('varPopover');
+      var input   = document.getElementById('varAltInput');
+      var btn     = document.getElementById('varConfirmBtn');
+      input.value = '';
+      btn.disabled = true;
+      var rect = item.getBoundingClientRect();
+      popover.style.left = rect.left + 'px';
+      popover.style.top  = (rect.bottom + 4) + 'px';
+      popover.classList.add('open');
+      setTimeout(function() { input.focus(); }, 40);
+    }
+    function closeVarPopover(confirmed) {
+      var popover = document.getElementById('varPopover');
+      if (!popover.classList.contains('open')) return;
+      var input   = document.getElementById('varAltInput');
+      var hasText = input.value.trim().length > 0;
+      if (confirmed && hasText && _lastInsertedStrong) {
+        _lastInsertedStrong.setAttribute('data-alt', input.value.trim());
+        _lastInsertedStrong.title = input.value.trim();
+      }
+      popover.classList.remove('open');
+      _varPopoverItem = null;
+      if (!hasText) {
+        document.getElementById('feedbackBar').classList.add('open');
+      }
+    }
+    function onVarAltInput() {
+      var hasText = document.getElementById('varAltInput').value.trim().length > 0;
+      document.getElementById('varConfirmBtn').disabled = !hasText;
+    }
+
+    document.addEventListener('click', function(e) {
+      // Close var menu
+      if (!e.target.closest('#varMenu') && !e.target.closest('#ftVariable')) {
+        var menu = document.getElementById('varMenu');
+        if (menu.classList.contains('open')) {
+          menu.classList.remove('open');
+          var btn = document.getElementById('ftVariable');
+          if (btn) btn.classList.remove('ft-icon-btn--active');
+        }
+      }
+      // Close popover when clicking outside mod-texto's filling-item
+      var popover = document.getElementById('varPopover');
+      if (popover.classList.contains('open')) {
+        if (!e.target.closest('#varPopover') &&
+            (!_varPopoverItem || !_varPopoverItem.contains(e.target))) {
+          closeVarPopover(false);
+        }
+      }
+    });
+
+    // ── Sección drop zone ──────────────────────────
+    var seccionDropIndex = -1;
+    var seccionPlaceholder = null;
+
+    function onSeccionDragOver(e, seccion) {
+      if (!dragType || !isContent(dragType)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (seccion.classList.contains('mod-seccion--empty')) {
+        seccion.classList.add('drag-over');
+      } else {
+        var idx = getDropIndexInCard(seccion, e.clientY);
+        if (idx !== seccionDropIndex) {
+          seccionDropIndex = idx;
+          if (!seccionPlaceholder) {
+            seccionPlaceholder = document.createElement('div');
+            seccionPlaceholder.className = 'drop-placeholder';
+          }
+          var its = Array.prototype.slice.call(seccion.querySelectorAll('.filling-item'));
+          var ref = seccionDropIndex < its.length ? its[seccionDropIndex] : null;
+          if (ref) { seccion.insertBefore(seccionPlaceholder, ref); }
+          else     { seccion.appendChild(seccionPlaceholder); }
+        }
+      }
+    }
+
+    function onSeccionDragLeave(e, seccion) {
+      if (seccion.contains(e.relatedTarget)) return;
+      seccion.classList.remove('drag-over');
+      if (seccionPlaceholder && seccionPlaceholder.parentNode) {
+        seccionPlaceholder.parentNode.removeChild(seccionPlaceholder);
+      }
+      seccionDropIndex = -1;
+    }
+
+    function onSeccionDrop(e, seccion) {
+      if (!dragType || !isContent(dragType)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var isEmpty = seccion.classList.contains('mod-seccion--empty');
+      seccion.classList.remove('drag-over');
+      if (seccionPlaceholder && seccionPlaceholder.parentNode) {
+        seccionPlaceholder.parentNode.removeChild(seccionPlaceholder);
+      }
+      var newItems = createFillingItems(dragType);
+      if (isEmpty) {
+        seccion.classList.remove('mod-seccion--empty');
+        seccion.innerHTML = '';
+        newItems.forEach(function(it) { seccion.appendChild(it); });
+      } else {
+        var its = seccion.querySelectorAll('.filling-item');
+        var refNode = (seccionDropIndex >= 0 && seccionDropIndex < its.length) ? its[seccionDropIndex] : null;
+        newItems.forEach(function(it) {
+          if (refNode) { seccion.insertBefore(it, refNode); }
+          else         { seccion.appendChild(it); }
+        });
+      }
+      seccionDropIndex = -1;
+      showGANotification();
+      updateActionBarStates();
+      updateSidenavState();
+      updateContinuarState();
+    }
+
+    // ── Context Panel — Figma 33:11638 ──────────────
+    function getItemLabel(item) {
+      if (item.querySelector('.email-header-module')) return 'Header';
+      if (item.querySelector('.mod-texto__title')) return 'Título';
+      if (item.querySelector('.mod-texto__body'))  return 'Cuerpo';
+      if (item.querySelector('.mod-imagen')) return 'Imagen';
+      if (item.querySelector('.mod-divisor')) return 'Divisor';
+      if (item.querySelector('.mod-boton')) return 'Botón';
+      if (item.querySelector('.mod-lista')) return 'Lista';
+      if (item.querySelector('.mod-html')) return 'HTML';
+      return 'Módulo';
+    }
+    function openContextPanel(item) {
+      document.getElementById('ctxTitle').textContent = getItemLabel(item);
+      document.querySelector('.panel-elements').style.display = 'none';
+      document.getElementById('contextPanel').classList.add('visible');
+    }
+    function closeContextPanel() {
+      document.getElementById('contextPanel').classList.remove('visible');
+      document.querySelector('.panel-elements').style.display = '';
+    }
+
+    // ── Continuar — disabled while any mod-seccion is in empty state ──
+    function updateContinuarState() {
+      var btnContinuar = document.getElementById('btnContinuar');
+      var hasEmptySeccion = document.querySelector('.mod-seccion--empty') !== null;
+      if (hasEmptySeccion) {
+        btnContinuar.classList.add('btn--disabled');
+        btnContinuar.disabled = true;
+      } else {
+        var hasContent = document.querySelector('.canvas-module') !== null ||
+                         document.getElementById('emptyCard').classList.contains('filling-card') ||
+                         document.querySelectorAll('.email-header-item').length > 0;
+        if (hasContent) {
+          btnContinuar.classList.remove('btn--disabled');
+          btnContinuar.disabled = false;
+        }
+      }
+    }
+
+    // ── Sidenav Andes X — disable when canvas has content ──
+    function updateSidenavState() {
+      var container = document.getElementById('modulesContainer');
+      var emptyCard = document.getElementById('emptyCard');
+      var headerItems = document.querySelectorAll('.email-header-item');
+      var hasContent = container.children.length > 0 ||
+                       emptyCard.classList.contains('filling-card') ||
+                       headerItems.length > 0;
+      var andesX = document.getElementById('sidenavAndesX');
+      if (hasContent) {
+        andesX.classList.add('sidenav-item--disabled');
+      } else {
+        andesX.classList.remove('sidenav-item--disabled');
+      }
+    }
+
+    // ── GA_notification — Figma 29:4186 ─────────────
+    function showGANotification() {
+      var el = document.getElementById('GA_notification');
+      el.classList.add('visible');
+      if (gaNotifTimer) clearTimeout(gaNotifTimer);
+      gaNotifTimer = setTimeout(function() {
+        el.classList.remove('visible');
+        gaNotifTimer = null;
+      }, 2500);
+    }
+
+    // ── Init ─────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('modulesContainer').style.display = 'none';
+      // Reposition action bar + floating toolbar on canvas scroll
+      document.getElementById('canvasArea').addEventListener('scroll', function() {
+        var activeItem = document.querySelector('.filling-item--active');
+        if (activeItem) {
+          positionActionBar(activeItem);
+          if (activeItem.querySelector('.mod-texto__title, .mod-texto__body')) {
+            positionFloatingToolbar(activeItem);
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

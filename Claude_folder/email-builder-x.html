@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Builder X</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Proxima Nova', 'Inter', -apple-system, sans-serif;
+      background: #EDEDED;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Tokens ── */
+    :root {
+      --blue-500: #3483FA;
+      --blue-600: #2968C8;
+      --accent:   #434CE4;
+      --lavender: #ECE8FF;
+      --lavender-vivid: #A68FF7;
+      --shadow-flat: 0px 1px 2px 0px rgba(0,0,0,0.12);
+      --text-primary: rgba(0,0,0,0.9);
+      --text-secondary: rgba(0,0,0,0.55);
+      --text-disabled: rgba(0,0,0,0.25);
+      --border-default: rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ── */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 80px;
+      z-index: 200;
+    }
+    .header__breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 15px;
+      color: var(--text-secondary);
+    }
+    .header__back-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--blue-500);
+      text-decoration: none;
+      font-family: inherit;
+      font-size: 12px;
+    }
+    .header__back-link:hover { text-decoration: underline; }
+    .header__sep {
+      width: 1px;
+      height: 11px;
+      background: rgba(0,0,0,0.18);
+    }
+    .header__actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      padding: 7px 16px;
+      cursor: pointer;
+      transition: background 0.12s;
+      white-space: nowrap;
+    }
+    .btn--transparent { background: transparent; color: var(--blue-500); }
+    .btn--transparent:hover { background: rgba(52,131,250,0.08); }
+    .btn--transparent:active { background: rgba(52,131,250,0.16); }
+    .btn--quiet {
+      background: transparent;
+      border: 1px solid rgba(0,0,0,0.25);
+      color: var(--text-secondary);
+    }
+    .btn--quiet:hover { background: rgba(0,0,0,0.04); }
+    .btn--loud { background: var(--blue-500); color: #FFFFFF; }
+    .btn--loud:hover { background: var(--blue-600); }
+    .btn--loud:active { background: #1e4fa0; }
+    .btn--disabled {
+      background: rgba(0,0,0,0.10) !important;
+      color: var(--text-disabled) !important;
+      border-color: transparent !important;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      height: 100vh;
+      padding-top: 56px;
+      padding-bottom: 64px;
+    }
+
+    /* ── Sidenav ── */
+    .sidenav {
+      width: 80px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+    .sidenav-item { display: flex; align-items: flex-start; width: 100%; }
+    .sidenav-item--active { gap: 8px; padding: 12px 0; }
+    /* Legacy is inactive at top — bottom-right curve creates notch pointing toward active item below */
+    .sidenav-item--inactive { background: #EDEDED; border-radius: 0 0 16px 0; padding: 12px 12px 12px; }
+    .sidenav-item__indicator {
+      width: 4px;
+      align-self: stretch;
+      border-radius: 0 4px 4px 0;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .sidenav-item--active .sidenav-item__indicator { background: var(--blue-500); }
+    .sidenav-item--inactive .sidenav-item__indicator { display: none; }
+    .sidenav-item__body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 55px;
+      width: 56px;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .sidenav-item--active .sidenav-item__body:hover  { background: rgba(0,0,0,0.04); border-radius: 8px; }
+    .sidenav-item--inactive .sidenav-item__body:hover { background: rgba(0,0,0,0.06); border-radius: 8px; }
+    .sidenav-item__icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+    .sidenav-item__label { font-size: 12px; font-weight: 700; line-height: 15px; text-align: center; white-space: nowrap; }
+    .sidenav-item--active   .sidenav-item__label { color: var(--accent); }
+    .sidenav-item--inactive .sidenav-item__label { color: var(--text-secondary); }
+    /* Gray fill — remaining sidenav space, rounded top-right corner */
+    .sidenav-fill { flex: 1; background: #EDEDED; border-top-right-radius: 16px; }
+
+    /* ── Elements panel ── */
+    .elements-panel {
+      width: 357px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      padding: 32px;
+      overflow-y: auto;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 50;
+    }
+    .panel__title {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 35px;
+      color: var(--text-primary);
+    }
+    .panel__section { display: flex; flex-direction: column; gap: 16px; }
+    .panel__section-label {
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 22px;
+      color: var(--text-secondary);
+    }
+    .panel__cards { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* Element card */
+    .element-card {
+      width: 72px;
+      height: 78px;
+      background: #FFFFFF;
+      border: 1px solid #F5F5F5;
+      border-radius: 6px;
+      box-shadow: var(--shadow-flat);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: box-shadow 0.12s, border-color 0.12s;
+    }
+    .element-card:hover {
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.14);
+      border-color: var(--blue-500);
+    }
+    .element-card__thumb {
+      flex: 1;
+      background: linear-gradient(to bottom, #ece8ff 0%, #ffffff 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+    }
+    .element-card__label {
+      height: 23px;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: var(--text-primary);
+      padding: 4px 12px;
+    }
+
+    /* Thumb content */
+    .thumb-text {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .thumb-img-box {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-divisor {
+      width: 48px;
+      height: 2px;
+      background: #d0c4ff;
+      border-radius: 2px;
+    }
+    .thumb-btn {
+      background: var(--accent);
+      border-radius: 2px;
+      width: 44px;
+      height: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-btn__line {
+      width: 30px;
+      height: 3px;
+      background: #FFFFFF;
+      border-radius: 1px;
+    }
+    .thumb-header-card {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      padding: 4px 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .thumb-header-lines { display: flex; flex-direction: column; gap: 3px; }
+    .thumb-header-l1 { width: 20px; height: 3px; background: var(--accent); border-radius: 1px; }
+    .thumb-header-l2 { width: 20px; height: 2px; background: var(--lavender-vivid); border-radius: 1px; }
+    .thumb-circle {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #EDEDED;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+    .thumb-seccion {
+      background: #FFFFFF;
+      border-radius: 2px;
+      box-shadow: var(--shadow-flat);
+      width: 46px;
+      height: 28px;
+    }
+    .thumb-lista { display: flex; flex-direction: column; gap: 4px; }
+    .thumb-lista__title { width: 26px; height: 3px; background: var(--accent); border-radius: 1px; }
+    .thumb-lista__rows { display: flex; flex-direction: column; gap: 2px; }
+    .thumb-lista__row { display: flex; align-items: center; gap: 2px; }
+    .thumb-lista__dot { width: 4px; height: 4px; background: var(--accent); border-radius: 1px; flex-shrink: 0; }
+    .thumb-lista__line { width: 33px; height: 3px; background: var(--lavender-vivid); border-radius: 1px; }
+    .thumb-html {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: monospace;
+      line-height: 1;
+    }
+
+    /* ── Canvas / email preview area ── */
+    .canvas-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Preview toggle row */
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 16px 48px 0;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .preview-bar__label {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 18px;
+      color: var(--text-secondary);
+    }
+    /* Segmented control — dos botones 32×32 */
+    .vp-segmented {
+      display: inline-flex;
+      width: 64px;
+      margin-right: 48px;
+      height: 32px;
+      border-radius: 4px;
+      box-shadow: var(--shadow-flat);
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.10);
+    }
+    .vp-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: #FFFFFF;
+      transition: background 0.12s;
+      flex-shrink: 0;
+    }
+    .vp-btn:first-child { border-right: 1px solid rgba(0,0,0,0.10); }
+    .vp-btn:hover:not(.vp-btn--active) { background: rgba(0,0,0,0.04); }
+    .vp-btn--active { background: #C6DCF7; }
+    .vp-btn--active svg rect,
+    .vp-btn--active svg path { stroke: #3483FA; }
+    .vp-btn--active svg circle { fill: #3483FA; stroke: none; }
+
+    /* Email wrapper */
+    .email-wrapper {
+      display: flex;
+      justify-content: center;
+      padding: 16px 0 40px;
+    }
+    .email-canvas {
+      width: 640px;
+      background: #FFFFFF;
+      box-shadow: var(--shadow-flat);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Email: logo bar */
+    .email-logo-bar {
+      background: #FFE600;
+      padding: 8px 56px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Email: body */
+    .email-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      padding: 32px 24px;
+    }
+    .email-header-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 520px;
+    }
+    .email-thumbnail {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.10);
+      display: flex; align-items: center; justify-content: center;
+      background: #F5F5F5;
+      flex-shrink: 0;
+    }
+    .email-titles { display: flex; flex-direction: column; gap: 8px; }
+    .email-page-title {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 28px;
+      color: var(--text-primary);
+    }
+    .email-subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: var(--text-primary);
+    }
+
+    /* Email: empty state */
+    .email-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 40px 0;
+      width: 311px;
+    }
+    .email-empty-state__text {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 18px;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    /* Email: footer */
+    .email-footer-section {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      align-items: flex-start;
+      width: 520px;
+      padding-bottom: 24px;
+    }
+    .email-contact {
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--text-secondary);
+    }
+    .email-contact a {
+      color: var(--accent);
+      text-decoration: underline;
+      font-weight: 600;
+    }
+    .email-apps { display: flex; flex-direction: column; gap: 8px; }
+    .email-apps__label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 16px;
+      color: var(--text-secondary);
+    }
+    .email-apps__btns { display: flex; gap: 8px; }
+    .email-app-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      border: 1px solid #D0D4E6;
+      border-radius: 4px;
+      background: #FFFFFF;
+      font-size: 11px;
+      color: var(--text-primary);
+      cursor: default;
+    }
+    .email-social { display: flex; flex-direction: column; gap: 8px; }
+    .email-social__tag {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+      color: var(--text-secondary);
+    }
+    .email-social__icons { display: flex; gap: 12px; align-items: center; }
+    .social-icon {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: #F5F5F5;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .email-legales {
+      font-size: 10px;
+      line-height: 12px;
+      color: var(--text-secondary);
+      width: 100%;
+    }
+    .email-legales p { margin-bottom: 4px; }
+    .email-legales a {
+      color: var(--accent);
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* ── Footer bar ── */
+    .footer-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 64px;
+      background: #FFFFFF;
+      box-shadow: 0px -1px 2px rgba(0,0,0,0.12);
+      border-top: 1px solid rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 80px;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <nav class="header__breadcrumb">
+      <a class="header__back-link" href="Contenido.html">
+        <svg width="5" height="9" viewBox="0 0 5 9" fill="none">
+          <path d="M4.5 1L1 4.5l3.5 3.5" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Volver al Inicio
+      </a>
+      <div class="header__sep"></div>
+      <span>Nueva comunicación</span>
+    </nav>
+    <div class="header__actions">
+      <button class="btn btn--transparent">Descargar HTML</button>
+      <button class="btn btn--quiet btn--disabled" disabled>Guardar en Librería</button>
+    </div>
+  </header>
+
+  <!-- ── Layout ── -->
+  <div class="layout">
+
+    <!-- Sidenav -->
+    <aside class="sidenav">
+      <!-- Legacy (inactive) — top -->
+      <div class="sidenav-item sidenav-item--inactive" onclick="window.location.href='email-builder.html'" style="cursor:pointer">
+        <div class="sidenav-item__indicator"></div>
+        <div class="sidenav-item__body">
+          <div class="sidenav-item__icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="1.5" y="3.5" width="17" height="13" rx="2" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+              <path d="M6.5 3.5v13" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+              <path d="M1.5 8h5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span class="sidenav-item__label">Legacy</span>
+        </div>
+      </div>
+      <!-- Andes X (active) — below Legacy -->
+      <div class="sidenav-item sidenav-item--active">
+        <div class="sidenav-item__indicator"></div>
+        <div class="sidenav-item__body">
+          <div class="sidenav-item__icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="1.5" y="3.5" width="17" height="13" rx="2" stroke="#434CE4" stroke-width="1.5"/>
+              <path d="M7 8l3 3.5 3-3.5" stroke="#434CE4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="sidenav-item__label">Andes X</span>
+        </div>
+      </div>
+      <!-- Gray fill — remaining space with top-right radius -->
+      <div class="sidenav-fill"></div>
+    </aside>
+
+    <!-- Elements panel -->
+    <div class="elements-panel">
+      <h1 class="panel__title">Elementos</h1>
+
+      <!-- Básicos -->
+      <div class="panel__section">
+        <p class="panel__section-label">Básicos</p>
+        <div class="panel__cards">
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <span class="thumb-text">Aa</span>
+            </div>
+            <div class="element-card__label">Texto</div>
+          </div>
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-img-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="1.5" y="1.5" width="17" height="17" rx="2.5" stroke="rgba(0,0,0,0.25)" stroke-width="1.25"/>
+                  <circle cx="6.5" cy="6.5" r="2" fill="rgba(0,0,0,0.25)"/>
+                  <path d="M1.5 14l5-5 4 4 3-3 6 6" stroke="rgba(0,0,0,0.25)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="element-card__label">Imagen</div>
+          </div>
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-divisor"></div>
+            </div>
+            <div class="element-card__label">Divisor</div>
+          </div>
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-btn">
+                <div class="thumb-btn__line"></div>
+              </div>
+            </div>
+            <div class="element-card__label">Botón</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Secciones -->
+      <div class="panel__section">
+        <p class="panel__section-label">Secciones</p>
+        <div class="panel__cards">
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-header-card">
+                <div class="thumb-header-lines">
+                  <div class="thumb-header-l1"></div>
+                  <div class="thumb-header-l2"></div>
+                </div>
+                <div class="thumb-circle"></div>
+              </div>
+            </div>
+            <div class="element-card__label">Header</div>
+          </div>
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-seccion"></div>
+            </div>
+            <div class="element-card__label">Sección</div>
+          </div>
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <div class="thumb-lista">
+                <div class="thumb-lista__title"></div>
+                <div class="thumb-lista__rows">
+                  <div class="thumb-lista__row"><div class="thumb-lista__dot"></div><div class="thumb-lista__line"></div></div>
+                  <div class="thumb-lista__row"><div class="thumb-lista__dot"></div><div class="thumb-lista__line"></div></div>
+                  <div class="thumb-lista__row"><div class="thumb-lista__dot"></div><div class="thumb-lista__line"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="element-card__label">Lista</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avanzado -->
+      <div class="panel__section">
+        <p class="panel__section-label">Avanzado</p>
+        <div class="panel__cards">
+          <div class="element-card">
+            <div class="element-card__thumb">
+              <span class="thumb-html">&lt;/&gt;</span>
+            </div>
+            <div class="element-card__label">HTML</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <main class="canvas-area">
+
+      <!-- Preview toggle -->
+      <div class="preview-bar">
+        <div class="vp-segmented">
+          <button class="vp-btn vp-btn--active" title="Vista Desktop">
+            <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+              <rect x="0.75" y="0.75" width="12.5" height="8" rx="1.25" stroke="#3483FA" stroke-width="1.5"/>
+              <path d="M4 10.5h6M7 8.75V10.5" stroke="#3483FA" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="vp-btn" title="Vista Mobile">
+            <svg width="8" height="13" viewBox="0 0 8 13" fill="none">
+              <rect x="0.75" y="0.75" width="6.5" height="11.5" rx="1.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.5"/>
+              <circle cx="4" cy="10.5" r="0.75" fill="rgba(0,0,0,0.55)"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Email preview -->
+      <div class="email-wrapper">
+        <div class="email-canvas">
+
+          <!-- Logo bar (yellow) -->
+          <div class="email-logo-bar">
+            <img src="Mercado Libre.png" alt="Mercado Libre" height="40">
+          </div>
+
+          <!-- Email body -->
+          <div class="email-body">
+
+            <!-- Header section: thumbnail + title -->
+            <div class="email-header-section">
+              <div class="email-thumbnail">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="2" width="20" height="20" rx="3" stroke="rgba(0,0,0,0.25)" stroke-width="1.5"/>
+                  <circle cx="8" cy="8" r="2.5" fill="rgba(0,0,0,0.25)"/>
+                  <path d="M2 17l6-6 4 4 3-3 7 7" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div class="email-titles">
+                <p class="email-page-title">Page Title</p>
+                <p class="email-subtitle">Label</p>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div class="email-empty-state">
+              <img src="Empty_state_image.png" alt="" aria-hidden="true" style="width:240px;">
+              <!-- fallback svg removed -->
+              <svg width="0" height="0" viewBox="0 0 240 88" fill="none" aria-hidden="true" style="display:none;">
+                <ellipse cx="155" cy="44" rx="55" ry="46" fill="rgba(210,200,240,0.18)"/>
+                <ellipse cx="140" cy="38" rx="45" ry="40" fill="rgba(210,200,240,0.12)"/>
+                <!-- Dashed card (floating, being dragged) -->
+                <rect x="76" y="1" width="46" height="46" rx="6"
+                      stroke="rgba(0,0,0,0.9)" stroke-width="2" stroke-dasharray="6 3"
+                      fill="rgba(255,255,255,0.3)"/>
+                <!-- Solid card (drop target) -->
+                <rect x="118" y="41" width="46" height="46" rx="6"
+                      stroke="rgba(0,0,0,0.9)" stroke-width="2"
+                      fill="rgba(255,255,255,0.85)"/>
+                <!-- Curved drag arrow -->
+                <path d="M104 26 C114 34 116 42 119 50"
+                      stroke="rgba(0,0,0,0.45)" stroke-width="1.5"
+                      stroke-linecap="round" stroke-dasharray="3 2.5" fill="none"/>
+                <path d="M115 48 L119 53 L123 48"
+                      stroke="rgba(0,0,0,0.45)" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <p class="email-empty-state__text">Arrastra elementos desde el panel lateral o haz clic en ellos para añadirlos a tu diseño</p>
+            </div>
+
+            <!-- Footer content -->
+            <div class="email-footer-section">
+              <!-- Contact -->
+              <p class="email-contact">
+                Texto de contacto.<br>
+                <a href="#">Link de contacto.</a>
+              </p>
+
+              <!-- Apps -->
+              <div class="email-apps">
+                <p class="email-apps__label">¡Comprá y vendé desde tu celular!</p>
+                <div class="email-apps__btns">
+                  <div class="email-app-btn">
+                    <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
+                      <path d="M7 1.5L2 5v6l5 3 5-3V5L7 1.5Z" fill="#4285F4" opacity="0.7"/>
+                      <path d="M7 1.5L2 5l5 3 5-3L7 1.5Z" fill="#34A853" opacity="0.7"/>
+                      <path d="M2 5v6l5-3V2L2 5Z" fill="#FBBC05" opacity="0.8"/>
+                      <path d="M12 5v6l-5-3V2l5 3Z" fill="#EA4335" opacity="0.8"/>
+                    </svg>
+                    <span>Google Play</span>
+                  </div>
+                  <div class="email-app-btn">
+                    <svg width="13" height="16" viewBox="0 0 13 16" fill="none">
+                      <path d="M11 8.5c0-2.2 1.8-3.2 1.8-3.2S11.3 3 9.5 3c-1.2 0-2 .8-2.5.8S5.5 3 4.5 3C2.8 3 1 4.8 1 8.5S2.8 14 4.5 14c.8 0 1.5-.7 2-.7s1.3.7 2 .7C10.2 14 11 10.5 11 8.5z" fill="rgba(0,0,0,0.6)"/>
+                      <path d="M8 1.5C8.5 1 9.5.5 10 .5c.1.6-.2 1.3-.7 1.8-.5.5-1.2.9-2 .8-.1-.5.2-1.1.7-1.6z" fill="rgba(0,0,0,0.6)"/>
+                    </svg>
+                    <span>App Store</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Social -->
+              <div class="email-social">
+                <p class="email-social__tag">#LoMejorEstaLlegando</p>
+                <div class="email-social__icons">
+                  <!-- Facebook -->
+                  <div class="social-icon">
+                    <svg width="9" height="15" viewBox="0 0 9 15" fill="none">
+                      <path d="M6 5H8.5L8 7.5H6V14H3.5V7.5H2V5H3.5V4C3.5 2.3 4.5 1.5 6.5 1.5H8.5V4H7C6.5 4 6 4.3 6 5Z" fill="rgba(0,0,0,0.55)"/>
+                    </svg>
+                  </div>
+                  <!-- X (Twitter) -->
+                  <div class="social-icon" style="background:#F5F5F5; border-radius:4px;">
+                    <svg width="14" height="12" viewBox="0 0 14 12" fill="none">
+                      <path d="M1 1h3.5L7 5 9.5 1H13L9 6.5 13 11H9.5L7 7 4.5 11H1L5 6.5 1 1Z" fill="rgba(0,0,0,0.75)"/>
+                    </svg>
+                  </div>
+                  <!-- YouTube -->
+                  <div class="social-icon">
+                    <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+                      <rect x="0.5" y="0.5" width="15" height="11" rx="3" fill="#FF0000" opacity="0.85"/>
+                      <polygon points="6,3 6,9 11,6" fill="white"/>
+                    </svg>
+                  </div>
+                  <!-- Instagram -->
+                  <div class="social-icon">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <rect x="1" y="1" width="12" height="12" rx="3.5" stroke="rgba(0,0,0,0.55)" stroke-width="1.2" fill="none"/>
+                      <circle cx="7" cy="7" r="2.8" stroke="rgba(0,0,0,0.55)" stroke-width="1.2" fill="none"/>
+                      <circle cx="10.5" cy="3.5" r="0.75" fill="rgba(0,0,0,0.55)"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Legales -->
+              <div class="email-legales">
+                <p>Textos legales phasellus imperdiet sit amet ligula id imperdiet. Duis porttitor turpis facilisis ullamcorper consectetur. Nulla tincidunt vel urna nec interdum. Vivamus ac dictum ante, eget posuere justo.</p>
+                <br>
+                <p>Te enviamos este e-mail a {xxxx@xxxx.com} porque elegiste recibir información.</p>
+                <p><a href="#">Administrar preferencias de e-mails.</a></p>
+                <br>
+                <p>Conocé <a href="#">cómo cuidamos tu Privacidad</a> y visitá los <a href="#">Términos y Condiciones de Mercado Pago.</a></p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer bar -->
+  <footer class="footer-bar">
+    <button class="btn btn--loud btn--disabled" disabled>Continuar</button>
+  </footer>
+
+  <script>
+    // Preview toggle
+    document.querySelectorAll('.vp-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.vp-btn').forEach(function(b) {
+          b.classList.remove('vp-btn--active');
+        });
+        btn.classList.add('vp-btn--active');
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deeplinks — Países Link Único</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.55);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ─── Contenedor de lista ─── */
+    .deeplinks-list {
+      background: #fff;
+      border: 1.5px dashed #b0b0f0;
+      border-radius: 8px;
+      padding: 24px 0;
+      width: 638px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── Ítem base ─── */
+    .deeplink-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 8px 40px;
+      cursor: pointer;
+      border-radius: 4px;
+      position: relative;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .deeplink-item:hover {
+      background: rgba(0,0,0,0.04);
+    }
+
+    /* ─── Etiqueta país ─── */
+    .deeplink-label {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 15px;
+      color: rgba(0,0,0,0.9);
+      white-space: nowrap;
+      width: 99px;
+      flex-shrink: 0;
+    }
+
+    /* ─── Contenedor URL + icono ─── */
+    .deeplink-url-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      flex: 1;
+    }
+
+    /* ─── Texto URL ─── */
+    .deeplink-url {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 15px;
+      color: rgba(0,0,0,0.9);
+      word-break: break-all;
+      flex: 1;
+    }
+
+    /* ─── Icono chevron ─── */
+    .deeplink-chevron {
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s, transform 0.2s;
+      margin-top: 1px;
+    }
+
+    .deeplink-chevron svg {
+      display: block;
+    }
+
+    /* ─── Estados ─── */
+
+    /* Hover: muestra chevron down */
+    .deeplink-item:hover .deeplink-chevron {
+      opacity: 1;
+    }
+
+    /* Clic/expanded: chevron up, URL completa */
+    .deeplink-item.expanded .deeplink-chevron {
+      opacity: 1;
+      transform: rotate(180deg);
+    }
+
+    /* ─── Separador entre ítems ─── */
+    .deeplink-item + .deeplink-item {
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* ─── Press & Hold: barra de progreso ─── */
+    .deeplink-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 40px;
+      right: 40px;
+      height: 2px;
+      background: #3483fa;
+      border-radius: 2px;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: none;
+    }
+
+    .deeplink-item.holding::after {
+      transform: scaleX(1);
+      transition: transform 0.5s linear;
+    }
+
+    /* Modo selección activo */
+    .deeplink-item.selecting {
+      background: rgba(52, 131, 250, 0.07);
+      cursor: text;
+    }
+
+    .deeplink-item.selecting .deeplink-url {
+      user-select: text;
+      cursor: text;
+      background: rgba(52, 131, 250, 0.12);
+      border-radius: 3px;
+      padding: 1px 3px;
+      margin: -1px -3px;
+    }
+
+    .deeplink-item.selecting .deeplink-chevron {
+      opacity: 0 !important;
+    }
+
+    /* ─── Estado badge (solo para demo) ─── */
+    .state-badge {
+      position: absolute;
+      right: 12px;
+      top: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 20px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .deeplink-item:not(:hover):not(.expanded):not(.selecting) .state-badge.idle      { opacity: 1; background: #f0f0f0; color: #888; }
+    .deeplink-item:hover:not(.expanded):not(.selecting) .state-badge.hover           { opacity: 1; background: #e8f4fd; color: #1a73e8; }
+    .deeplink-item.expanded:not(.selecting) .state-badge.clic                        { opacity: 1; background: #e6f4ea; color: #1e7e34; }
+    .deeplink-item.selecting .state-badge.press                                      { opacity: 1; background: #eef2ff; color: #3483fa; }
+
+    /* ─── Tooltip copiado ─── */
+    .copied-toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: rgba(0,0,0,0.82);
+      color: #fff;
+      font-size: 12px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .copied-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ─── Nota de uso ─── */
+    .usage-note {
+      font-size: 11px;
+      color: rgba(0,0,0,0.45);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Deeplinks — Países</h1>
+
+  <div class="deeplinks-list" id="deeplinkList">
+    <!-- Los ítems se generan por JS -->
+  </div>
+
+  <p class="usage-note">
+    Hover → chevron &nbsp;|&nbsp; Clic → expande URL &nbsp;|&nbsp; Press &amp; hold → seleccionar texto
+  </p>
+
+  <div class="copied-toast" id="copiedToast">URL copiada al portapapeles</div>
+
+  <script>
+    const data = [
+      {
+        pais: "Argentina:",
+        urlCorta: "meli://generic_landing?url=https://lis...3333500-105c-11ee-8523-c93dd3d537f9&1",
+        urlCompleta: "meli://generic_landing?url=https://listado.mercadolibre.com.ar/celulares-smartphones/#deal_print_id=63333500-105c-11ee-8523-c93dd3d537f9&c"
+      },
+      {
+        pais: "Brasil:",
+        urlCorta: "meli://generic_landing?url=https://lis...8881200-105c-11ee-9900-d53ee4d530b2&1",
+        urlCompleta: "meli://generic_landing?url=https://lista.mercadolivre.com.br/celulares-smartphones/#deal_print_id=88812000-105c-11ee-9900-d53ee4d530b2&c"
+      },
+      {
+        pais: "Uruguay:",
+        urlCorta: "meli://generic_landing?url=https://lis...3333500-105c-11ee-8523-c93dd3d537f9&1",
+        urlCompleta: "meli://generic_landing?url=https://listado.mercadolibre.com.uy/compras/celulares-smartphones/#deal_print_id=63333500-105c-11ee-8523-c93dd3d537f9&c"
+      },
+      {
+        pais: "Colombia:",
+        urlCorta: "meli://generic_landing?url=https://lis...4412900-106c-11ee-9012-b73ff5e640c3&1",
+        urlCompleta: "meli://generic_landing?url=https://listado.mercadolibre.com.co/celulares-smartphones/#deal_print_id=44129000-106c-11ee-9012-b73ff5e640c3&c"
+      },
+      {
+        pais: "Chile:",
+        urlCorta: "meli://generic_landing?url=https://lis...5527800-107c-11ee-8321-a94gg6f741d4&1",
+        urlCompleta: "meli://generic_landing?url=https://listado.mercadolibre.cl/celulares-smartphones/#deal_print_id=55278000-107c-11ee-8321-a94gg6f741d4&c"
+      },
+      {
+        pais: "México:",
+        urlCorta: "meli://generic_landing?url=https://lis...7743100-108c-11ee-7410-c05hh7g852e5&1",
+        urlCompleta: "meli://generic_landing?url=https://listado.mercadolibre.com.mx/celulares-smartphones/#deal_print_id=77431000-108c-11ee-7410-c05hh7g852e5&c"
+      }
+    ];
+
+    const chevronSVG = `
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 4L6 8L10 4" stroke="rgba(0,0,0,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    const list = document.getElementById("deeplinkList");
+
+    data.forEach(item => {
+      const el = document.createElement("div");
+      el.className = "deeplink-item";
+
+      el.innerHTML = `
+        <span class="deeplink-label">${item.pais}</span>
+        <div class="deeplink-url-wrap">
+          <span class="deeplink-url">${item.urlCorta}</span>
+          <span class="deeplink-chevron">${chevronSVG}</span>
+        </div>
+        <span class="state-badge idle">Idle</span>
+        <span class="state-badge hover">Hover</span>
+        <span class="state-badge clic">Clic</span>
+        <span class="state-badge press">Seleccionar</span>
+      `;
+
+      const urlEl = el.querySelector(".deeplink-url");
+
+      let holdTimer = null;
+      let didHold = false;
+
+      function startHold(e) {
+        // Si ya está en modo selección, no hacer nada
+        if (el.classList.contains("selecting")) return;
+        didHold = false;
+        el.classList.add("holding");
+        holdTimer = setTimeout(() => {
+          didHold = true;
+          el.classList.remove("holding");
+          el.classList.add("selecting");
+          // Mostrar URL completa al entrar en selección
+          urlEl.textContent = item.urlCompleta;
+          // Seleccionar todo el texto automáticamente
+          const range = document.createRange();
+          range.selectNodeContents(urlEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }, 500);
+      }
+
+      function cancelHold() {
+        clearTimeout(holdTimer);
+        el.classList.remove("holding");
+      }
+
+      // Mouse
+      el.addEventListener("mousedown", startHold);
+      el.addEventListener("mouseup", cancelHold);
+      el.addEventListener("mouseleave", cancelHold);
+
+      // Touch (mobile)
+      el.addEventListener("touchstart", (e) => { startHold(e); }, { passive: true });
+      el.addEventListener("touchend", cancelHold);
+      el.addEventListener("touchcancel", cancelHold);
+
+      // Clic simple → toggle expand (solo si no fue un hold)
+      el.addEventListener("click", (e) => {
+        if (didHold) { didHold = false; return; }
+        if (el.classList.contains("selecting")) return;
+        const isExpanded = el.classList.contains("expanded");
+        el.classList.toggle("expanded");
+        urlEl.textContent = isExpanded ? item.urlCorta : item.urlCompleta;
+      });
+
+      // Click fuera → salir del modo selección
+      document.addEventListener("mousedown", (e) => {
+        if (el.classList.contains("selecting") && !el.contains(e.target)) {
+          el.classList.remove("selecting");
+          const isExpanded = el.classList.contains("expanded");
+          urlEl.textContent = isExpanded ? item.urlCompleta : item.urlCorta;
+          window.getSelection().removeAllRanges();
+        }
+      });
+
+      // Escape → salir del modo selección
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && el.classList.contains("selecting")) {
+          el.classList.remove("selecting");
+          const isExpanded = el.classList.contains("expanded");
+          urlEl.textContent = isExpanded ? item.urlCompleta : item.urlCorta;
+          window.getSelection().removeAllRanges();
+        }
+      });
+
+      list.appendChild(el);
+    });
+
+    function showToast() {
+      const toast = document.getElementById("copiedToast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+    }
+  </script>
+
+</body>
+</html>
